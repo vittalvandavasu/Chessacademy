@@ -1,0 +1,8 @@
+{
+  "name": "ChessCadet - Interactive Chess Academy",
+  "description": "Master chess through interactive board exercises, adaptive learning paths, real-time tactical feedback, and gamified progress tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

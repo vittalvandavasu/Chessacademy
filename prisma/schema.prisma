@@ -1,0 +1,289 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  passwordHash   String?
+  googleId       String?         @unique
+  fullName       String
+  avatarUrl      String?
+  role           String          @default("STUDENT") // STUDENT, TEACHER, ADMIN
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  profile        UserProfile?
+  attempts       ExerciseAttempt[]
+  lessonProgress LessonProgress[]
+  conceptMastery ConceptMastery[]
+  achievements   UserAchievement[]
+  dailySessions  DailySession[]
+  ownedClassrooms Classroom[]     @relation("TeacherClassrooms")
+  classroomMemberships ClassroomMember[]
+  assignmentProgress AssignmentProgress[]
+  discussions    DiscussionComment[]
+}
+
+model UserProfile {
+  userId               String   @id
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  learningRating       Int      @default(1000)
+  totalXp              Int      @default(0)
+  level                Int      @default(1)
+  currentStreakDays    Int      @default(0)
+  longestStreakDays    Int      @default(0)
+  lastActiveDate       String
+  accuracyRate         Float    @default(0.0)
+  totalPracticeMinutes Int      @default(0)
+  chessExperience      String   @default("I know how the pieces move")
+  onboardingCompleted  Boolean  @default(false)
+  updatedAt            DateTime @updatedAt
+}
+
+model LearningPath {
+  id              String   @id
+  title           String
+  subtitle        String
+  description     String
+  difficultyLevel String
+  displayOrder    Int
+  badgeId         String
+  createdAt       DateTime @default(now())
+
+  modules         Module[]
+}
+
+model Module {
+  id           String       @id
+  pathId       String
+  path         LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  title        String
+  description  String
+  displayOrder Int
+
+  lessons      Lesson[]
+
+  @@index([pathId])
+}
+
+model Lesson {
+  id               String            @id
+  moduleId         String
+  module           Module            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title            String
+  description      String
+  conceptKey       String
+  estimatedMinutes Int               @default(5)
+  xpReward         Int               @default(50)
+  displayOrder     Int
+
+  exercises        Exercise[]
+  progress         LessonProgress[]
+  discussions      DiscussionComment[]
+
+  @@index([moduleId])
+}
+
+model Concept {
+  key             String           @id
+  name            String
+  category        String // Foundations, Tactics, Strategy, Endgames
+  difficulty      Int              @default(1)
+  importance      Int              @default(1)
+  prerequisites   String           @default("[]") // JSON string array of prerequisite concept keys
+  description     String
+
+  exercises       Exercise[]
+  userMasteries   ConceptMastery[]
+}
+
+model Exercise {
+  id               String            @id
+  lessonId         String?
+  lesson           Lesson?           @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  conceptKey       String
+  concept          Concept           @relation(fields: [conceptKey], references: [key])
+  exerciseType     String            // FIND_THE_MOVE, FIND_THE_TACTIC, FIND_THE_CHECKMATE, etc.
+  difficulty       Int               @default(1)
+  fen              String
+  initialOrientation String          @default("white")
+  targetMoves      String            // JSON string array of acceptable moves
+  solutionSequence String?           // JSON string representing multi-step solution line
+  conceptHint      String
+  areaHint         String
+  pieceHint        String
+  moveHint         String
+  explanation      String
+  commonMistakes   String?           // JSON string of mistake feedbacks
+  xp               Int               @default(20)
+  status           String            @default("VERIFIED") // DRAFT, REVIEW, VERIFIED, PUBLISHED, REJECTED
+  createdAt        DateTime          @default(now())
+
+  attempts         ExerciseAttempt[]
+
+  @@index([conceptKey])
+  @@index([lessonId])
+}
+
+model ExerciseAttempt {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId     String
+  exercise       Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  isSuccess      Boolean
+  hintsUsed      Int      @default(0)
+  attemptCount   Int      @default(1)
+  timeTakenMs    Int      @default(0)
+  playedSan      String
+  ratingDelta    Int      @default(0)
+  xpAwarded      Int      @default(0)
+  isRewardEligible Boolean @default(true)
+  createdAt      DateTime @default(now())
+
+  @@index([userId, exerciseId])
+  @@index([createdAt])
+}
+
+model LessonProgress {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId     String
+  lesson       Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  isCompleted  Boolean   @default(false)
+  completedAt  DateTime?
+  xpAwarded    Int       @default(0)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+}
+
+model ConceptMastery {
+  id                         String   @id @default(uuid())
+  userId                     String
+  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conceptKey                 String
+  concept                    Concept  @relation(fields: [conceptKey], references: [key], onDelete: Cascade)
+  masteryPercentage          Int      @default(50) // 0 to 100
+  totalAttempts              Int      @default(0)
+  successfulAttempts         Int      @default(0)
+  recentErrors               Int      @default(0)
+  averageResponseTimeSeconds Float    @default(0.0)
+  lastPracticedAt            DateTime @default(now())
+
+  @@unique([userId, conceptKey])
+  @@index([userId])
+}
+
+model Achievement {
+  id          String   @id
+  title       String
+  description String
+  icon        String
+  xpReward    Int      @default(100)
+  category    String   // streak, mastery, puzzle, milestone
+
+  userUnlocks UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  isUnlocked    Boolean     @default(false)
+  progress      Int         @default(0)
+  unlockedAt    DateTime?
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+model DailySession {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateString       String   // YYYY-MM-DD
+  tasksCompleted   Int      @default(0)
+  totalTasks       Int      @default(5)
+  isCompleted      Boolean  @default(false)
+  xpEarned         Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  @@unique([userId, dateString])
+}
+
+model Classroom {
+  id          String            @id @default(uuid())
+  teacherId   String
+  teacher     User              @relation("TeacherClassrooms", fields: [teacherId], references: [id], onDelete: Cascade)
+  name        String
+  joinCode    String            @unique
+  createdAt   DateTime          @default(now())
+
+  members     ClassroomMember[]
+  assignments Assignment[]
+
+  @@index([teacherId])
+}
+
+model ClassroomMember {
+  id          String    @id @default(uuid())
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  joinedAt    DateTime  @default(now())
+
+  @@unique([classroomId, studentId])
+  @@index([studentId])
+}
+
+model Assignment {
+  id                  String               @id @default(uuid())
+  classroomId         String
+  classroom           Classroom            @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  title               String
+  conceptKey          String?
+  targetExerciseCount Int                  @default(5)
+  dueDate             String
+  createdAt           DateTime             @default(now())
+
+  studentProgress     AssignmentProgress[]
+
+  @@index([classroomId])
+}
+
+model AssignmentProgress {
+  id             String     @id @default(uuid())
+  assignmentId   String
+  assignment     Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId      String
+  student        User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  completedCount Int        @default(0)
+  isCompleted    Boolean    @default(false)
+  completedAt    DateTime?
+
+  @@unique([assignmentId, studentId])
+}
+
+model DiscussionComment {
+  id        String   @id @default(uuid())
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  upvotes   Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([lessonId])
+}
