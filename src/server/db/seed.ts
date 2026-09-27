@@ -166,6 +166,22 @@ export async function seedDatabase() {
   }
   console.log('✓ Tactical puzzle bank seeded');
 
+  // 6. Seed Achievements
+  const achievements = [
+    { id: 'seven-day-streak', title: '7-Day Scholar Streak', description: 'Practice chess for 7 days in a row', icon: 'flame', xpReward: 100, category: 'streak' },
+    { id: 'first-win', title: 'First Tactical Strike', description: 'Solve your first tactical chess exercise', icon: 'zap', xpReward: 50, category: 'milestone' },
+    { id: 'tactics-master', title: 'Tactics Prodigy', description: 'Reach 80% mastery on tactics concepts', icon: 'award', xpReward: 200, category: 'mastery' },
+  ];
+
+  for (const ach of achievements) {
+    await prisma.achievement.upsert({
+      where: { id: ach.id },
+      create: ach,
+      update: ach,
+    });
+  }
+  console.log('✓ Achievements seeded');
+
   console.log('=== DATABASE SEED COMPLETED SUCCESSFULLY ===');
 }
 

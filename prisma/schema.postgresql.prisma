@@ -1,6 +1,6 @@
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db?connection_limit=1&socket_timeout=60"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -329,4 +329,3 @@ model MagicLinkToken {
 
   @@index([tokenHash])
 }
-

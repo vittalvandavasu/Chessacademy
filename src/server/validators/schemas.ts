@@ -2,9 +2,8 @@ import { z } from 'zod';
 
 export const RegisterSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(8, 'Password must be at least 8 characters long'),
   fullName: z.string().min(2),
-  role: z.enum(['STUDENT', 'TEACHER', 'ADMIN']).default('STUDENT'),
 });
 
 export const LoginSchema = z.object({
@@ -12,20 +11,20 @@ export const LoginSchema = z.object({
   password: z.string(),
 });
 
-export const MagicLinkSchema = z.object({
-  email: z.string().email(),
-});
-
-export const GoogleAuthSchema = z.object({
-  credential: z.string().optional(),
-  email: z.string().email(),
-  fullName: z.string(),
-  googleId: z.string(),
-  avatarUrl: z.string().optional(),
-});
-
-export const DemoSwitchSchema = z.object({
+export const UpdateUserRoleSchema = z.object({
   role: z.enum(['STUDENT', 'TEACHER', 'ADMIN']),
+});
+
+export const MagicLinkRequestSchema = z.object({
+  email: z.string().email(),
+});
+
+export const MagicLinkVerifySchema = z.object({
+  token: z.string().min(16),
+});
+
+export const StartSessionSchema = z.object({
+  exerciseId: z.string(),
 });
 
 export const ExerciseAttemptSchema = z.object({
@@ -33,6 +32,7 @@ export const ExerciseAttemptSchema = z.object({
   to: z.string().regex(/^[a-h][1-8]$/, 'Invalid destination square'),
   promotion: z.enum(['q', 'r', 'b', 'n']).optional().default('q'),
   stepIndex: z.number().int().nonnegative().default(0),
+  sessionId: z.string().optional(),
   hintsUsed: z.number().int().min(0).max(4).default(0),
   timeTakenMs: z.number().int().nonnegative().default(1000),
 });
@@ -67,10 +67,8 @@ export const CreateExerciseSchema = z.object({
   xp: z.number().int().min(5).max(100).default(20),
 });
 
+// SECURE MIGRATION: Accepts ONLY non-competitive completed lesson IDs.
+// Competitive attributes (totalXp, learningRating, streak) are NEVER accepted from client.
 export const MigrationPayloadSchema = z.object({
-  totalXp: z.number().int().nonnegative().optional(),
-  learningRating: z.number().int().min(400).max(2800).optional(),
-  completedLessons: z.array(z.string()).optional(),
-  puzzlesSolved: z.number().int().nonnegative().optional(),
-  currentStreakDays: z.number().int().nonnegative().optional(),
+  completedLessons: z.array(z.string()).default([]),
 });

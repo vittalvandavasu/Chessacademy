@@ -90,13 +90,10 @@ async function runTestSuite() {
   const magicUser = await AuthService.getOrCreateDemoUser('STUDENT');
   assert(magicUser.email === 'alex@chesscadet.com', 'Demo student retrieval succeeds');
 
-  // Google OAuth authentication
-  const googleUser = await AuthService.getOrCreateUserByGoogle({
-    email: `google.${Date.now()}@example.com`,
-    fullName: 'Google Authenticated User',
-    googleId: `gid_${Date.now()}`,
-  });
-  assert(googleUser.email.includes('google.'), 'Google OAuth creates authenticated profile');
+  // Cryptographic magic link token generation & verification
+  const magicLinkRawToken = await AuthService.createMagicLinkToken(testStudent.id);
+  const consumedMagic = await AuthService.verifyAndConsumeMagicLinkToken(magicLinkRawToken);
+  assert(consumedMagic.success === true, 'Cryptographic magic link token verified and consumed');
 
   // STEP 3: ROLE-BASED ACCESS CONTROL (RBAC)
   console.log('\n--- 3. Server-Authoritative Role-Based Access Control (RBAC) ---');
