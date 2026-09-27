@@ -52,6 +52,33 @@ export interface ExerciseStep {
   userMove: string; // SAN e.g. "Rd8+" or UCI e.g. "d1d8"
   opponentReply?: string; // Computer reply SAN e.g. "Rxd8"
   explanation?: string;
+  annotation?: '!' | '!!' | '!?' | '?' | '??';
+  fenAfter?: string;
+}
+
+export interface WhyThisMove {
+  tacticalIdea: string;
+  target: string;
+  keyFeature: string;
+  whyItWorks: string;
+}
+
+export interface AlternativeMove {
+  san: string;
+  uci?: string;
+  category?: 'Missed Check' | 'Missed Capture' | 'Defensive Oversight' | 'Miscalculation' | 'Tactical Oversell' | 'Quiet Move Blunder';
+  whyItFails: string;
+  refutationMoves?: string[]; // e.g. ["Qxf7+", "Kh8", "Qxg7#"]
+}
+
+export interface ConceptCardData {
+  concept: TacticalConcept;
+  title: string;
+  tagline: string;
+  definition: string;
+  recognitionCues: string[];
+  commonMistakes: string[];
+  transferablePrinciple: string;
 }
 
 export interface Exercise {
@@ -72,6 +99,16 @@ export interface Exercise {
   xp: number;
   highlightSquares?: string[]; // Squares to highlight initially (e.g. pinned piece)
   arrowGuide?: { from: string; to: string; color?: string }[];
+  // Instructional 2.0 Extensions
+  observationPrompt?: string; // "What should you notice?"
+  objective?: string; // e.g. "Deliver a forcing skewer to win the Queen"
+  consequence?: string; // What happens next (Level 3 feedback)
+  principleToRemember?: string; // Transferable rule (Level 4 feedback)
+  whyThisMove?: WhyThisMove;
+  alternatives?: AlternativeMove[];
+  learningPathTitle?: string;
+  lessonTitle?: string;
+  errorDiagnostics?: Record<string, { category: string; explanation: string; mistake: string }>;
 }
 
 export interface LessonSection {

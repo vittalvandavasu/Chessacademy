@@ -53,9 +53,16 @@ export default function App() {
           const meRes = await ApiClient.getMe();
           authUser = meRes.user;
         } catch {
-          // If no session, switch to student demo persona
-          const demoRes = await ApiClient.switchDemoRole('STUDENT');
-          authUser = demoRes.user;
+          // If no active session, sign in default student account via standard login
+          try {
+            const loginRes = await ApiClient.login({
+              email: 'alex@chesscadet.com',
+              password: 'Scholar123!',
+            });
+            authUser = loginRes.user;
+          } catch {
+            // Continue in guest mode if server is not reachable
+          }
         }
 
         if (authUser && isMounted) {

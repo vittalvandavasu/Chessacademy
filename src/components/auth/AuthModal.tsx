@@ -30,11 +30,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const res = await ApiClient.switchDemoRole(role);
+      const emailMap = {
+        STUDENT: 'alex@chesscadet.com',
+        TEACHER: 'grandmaster.elena@chesscadet.com',
+        ADMIN: 'admin@chesscadet.com',
+      };
+      const res = await ApiClient.login({
+        email: emailMap[role],
+        password: 'Scholar123!',
+      });
       onAuthSuccess(res.user);
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to switch demo account.');
+      setError(err.message || 'Failed to authenticate role account.');
     } finally {
       setLoading(false);
     }

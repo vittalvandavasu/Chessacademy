@@ -5,7 +5,7 @@ import { ChessEvaluationService } from '../services/chessEvaluationService';
 import { GamificationService } from '../services/gamificationService';
 import { AdaptiveService } from '../services/adaptiveService';
 import { PuzzleVerificationService } from '../services/puzzleVerificationService';
-import { authenticate, AuthenticatedRequest } from '../middleware/authMiddleware';
+import { authenticate, optionalAuthenticate, AuthenticatedRequest } from '../middleware/authMiddleware';
 import { requireRole } from '../middleware/roleMiddleware';
 import { validateBody } from '../middleware/validateMiddleware';
 import {
@@ -482,17 +482,17 @@ apiRouter.post('/exercises/:id/hint', authenticate, async (req: AuthenticatedReq
  */
 apiRouter.post(
   '/exercises/:id/attempt',
-  authenticate,
+  optionalAuthenticate,
   validateBody(ExerciseAttemptSchema),
   async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user!.userId;
+      const userId = req.user?.userId;
       const exerciseId = req.params.id;
       const { from, to, promotion, stepIndex, sessionId, timeTakenMs } = req.body;
 
       // 1. Authoritative hint resolution
       let authoritativeHints = req.body.hintsUsed;
-      if (sessionId) {
+      if (sessionId && userId) {
         const session = await prisma.exerciseSession.findUnique({ where: { id: sessionId } });
         if (session && session.userId === userId) {
           authoritativeHints = Math.max(authoritativeHints, session.hintsRequested);
@@ -515,15 +515,29 @@ apiRouter.post(
         });
       }
 
-      // 3. Server-Authoritative Gamification & Atomic DB Transaction
-      const gamificationResult = await GamificationService.processAttemptTransaction({
-        userId,
-        exerciseId,
-        isSuccess: evalResult.isSuccess,
-        hintsUsed: authoritativeHints,
-        timeTakenMs,
-        playedSan: evalResult.playedSan || `${from}${to}`,
-      });
+      // 3. Server-Authoritative Gamification & Atomic DB Transaction (if authenticated)
+      let gamificationResult = null;
+      if (userId) {
+        gamificationResult = await GamificationService.processAttemptTransaction({
+          userId,
+          exerciseId,
+          isSuccess: evalResult.isSuccess,
+          hintsUsed: authoritativeHints,
+          timeTakenMs,
+          playedSan: evalResult.playedSan || `${from}${to}`,
+        });
+      } else {
+        const exercise = await prisma.exercise.findUnique({ where: { id: exerciseId } });
+        gamificationResult = {
+          xpAwarded: evalResult.isSuccess ? (exercise?.xp || 25) : 0,
+          ratingDelta: evalResult.isSuccess ? 10 : 0,
+          newRating: 1000,
+          newTotalXp: evalResult.isSuccess ? (exercise?.xp || 25) : 0,
+          newStreak: 1,
+          isRewardEligible: true,
+          unlockedAchievements: [],
+        };
+      }
 
       return res.json({
         ...evalResult,

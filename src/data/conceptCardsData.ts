@@ -1,0 +1,448 @@
+import { TacticalConcept, ConceptCardData } from '../types/chess';
+
+export const CONCEPT_CARDS_DATA: Record<TacticalConcept, ConceptCardData> = {
+  FORK: {
+    concept: 'FORK',
+    title: 'The Fork (Double Attack)',
+    tagline: 'Striking two targets with a single coordinated move',
+    definition:
+      'A fork is a tactical manoeuvre where a single piece attacks two or more opponent pieces or squares simultaneously. Knights and pawns are the most notorious forkers because of their unique geometric movement, but any piece (including kings) can deliver a fork.',
+    recognitionCues: [
+      'Look for undefended or high-value enemy pieces on squares of the same color (for knights).',
+      'Identify geometric alignments where a knight or pawn can sit between heavy pieces (e.g. King on e8 and Rook on a8).',
+      'Scan for enemy pieces sharing the same diagonal, rank, or file without mutual defense.',
+      'Check whether a forcing check forces the enemy king onto a square vulnerable to a follow-up fork.',
+    ],
+    commonMistakes: [
+      'Focusing only on the piece being attacked rather than what other pieces become vulnerable.',
+      'Playing a fork on a square where one of the targeted pieces can simply capture the attacker with check.',
+      'Overlooking an opponent counter-threat (e.g. Zwischenzug check or mate threat) that nullifies the fork.',
+    ],
+    transferablePrinciple:
+      'When you see two valuable enemy pieces in close proximity, ask: "Can a knight, pawn, or queen attack both at the same time?" Always check whether forcing checks can corral enemy pieces onto forkable squares.',
+  },
+  PIN: {
+    concept: 'PIN',
+    title: 'The Pin',
+    tagline: 'Paralyzing a piece by targeting the higher-value objective behind it',
+    definition:
+      'A pin occurs when an attacking line piece (Bishop, Rook, or Queen) attacks an opponent piece that cannot safely move away because doing so would expose a more valuable piece (or the King) behind it on the same line. An absolute pin involves the King (making any move illegal); a relative pin involves a non-king piece (making a move legal but disastrous).',
+    recognitionCues: [
+      'Enemy King, Queen, or Rook aligned on an open rank, file, or diagonal.',
+      'Intervening enemy pieces that sit directly along the line of fire.',
+      'Pinned pieces that have lost their defensive ability to guard other squares.',
+      'Piling up attackers on the pinned piece faster than the opponent can add defenders.',
+    ],
+    commonMistakes: [
+      'Forgetting that a pinned piece cannot move, and expecting it to defend its allies.',
+      'Failing to increase pressure on a pinned piece with pawns or smaller pieces (the principle of "piling on").',
+      'Allowing the opponent to break the pin with a counter-check or interposition.',
+    ],
+    transferablePrinciple:
+      'A pinned piece is not a real defender. Whenever an opponent piece is pinned, look to attack it again with a piece of lesser value (especially a pawn).',
+  },
+  SKEWER: {
+    concept: 'SKEWER',
+    title: 'The Skewer (X-Ray Attack)',
+    tagline: 'Attacking the high-value piece in front to win the prize behind',
+    definition:
+      'A skewer is the inverse of a pin: an attacking line piece attacks a more valuable enemy piece (such as the King or Queen), compelling it to flee and exposing a less valuable or undefended piece behind it along the line.',
+    recognitionCues: [
+      'King and Queen or heavy pieces sharing an open rank, file, or long diagonal.',
+      'The more valuable piece is positioned IN FRONT of the target piece.',
+      'Line pieces (Rooks on open files/ranks, Bishops on diagonals) with clear sightlines.',
+    ],
+    commonMistakes: [
+      'Confusing a skewer with a pin and checking from an angle where the rear piece is protected.',
+      'Allowing the front piece to step away with a counter-attack or check.',
+      'Not calculating whether the captured piece behind is adequately defended.',
+    ],
+    transferablePrinciple:
+      'Line alignment of heavy pieces is an immediate tactical red flag. If the king or queen is in front, look for a line attack that forces the front piece aside.',
+  },
+  DISCOVERED_ATTACK: {
+    concept: 'DISCOVERED_ATTACK',
+    title: 'Discovered Attack',
+    tagline: 'Moving one piece to unleash the latent fury of another',
+    definition:
+      'A discovered attack occurs when one piece moves out of the way, unmasking an attack from a friendly line piece (Bishop, Rook, or Queen) behind it. If the moving piece also delivers check, it becomes a "Discovered Check"—one of chess’s most lethal weapons.',
+    recognitionCues: [
+      'Your line piece (Rook, Bishop, Queen) pointed at an enemy target with your own piece standing in between.',
+      'The intervening piece can make a forcing, disruptive move (capture, check, or threat).',
+      'Opponent piece left on an open or semi-open file/diagonal.',
+    ],
+    commonMistakes: [
+      'Moving the unmasking piece to a passive square that allows the opponent to defend both threats.',
+      'Overlooking that the opponent might counter-attack the unmasked piece with check.',
+    ],
+    transferablePrinciple:
+      'Line up your pieces behind front-line pieces. When the front piece moves with tempo (especially check or capture), the opponent cannot respond to both threats.',
+  },
+  DOUBLE_ATTACK: {
+    concept: 'DOUBLE_ATTACK',
+    title: 'Double Attack',
+    tagline: 'Creating two separate threats in a single move',
+    definition:
+      'A double attack is the fundamental foundation of almost all tactics. It involves creating two simultaneous threats—such as threatening checkmate while attacking a hanging piece—so that the defender can only meet one of them.',
+    recognitionCues: [
+      'Multiple undefended pieces in the enemy camp.',
+      'Simultaneous mating net threats combined with hanging pieces.',
+      'A single move that creates both a direct threat and an indirect positional threat.',
+    ],
+    commonMistakes: [
+      'Creating two threats where one simple defensive move addresses both (e.g. blocking check while protecting a piece).',
+    ],
+    transferablePrinciple:
+      'Defense requires time. When you create two urgent threats at once, you deprive the opponent of the time needed to survive.',
+  },
+  BACK_RANK_MATE: {
+    concept: 'BACK_RANK_MATE',
+    title: 'Back-Rank Mate',
+    tagline: 'Exploiting the king trapped behind its own shield of pawns',
+    definition:
+      'A back-rank mate occurs when a Rook or Queen delivers checkmate along the opponent’s 8th (or 1st) rank because the defending King is trapped behind its own friendly pawns with no escape square ("luft").',
+    recognitionCues: [
+      'Castled king behind a wall of unmoved pawns (f7, g7, h7 or f2, g2, h2).',
+      'Absence of an escape square ("luft" or breathing hole).',
+      'Defenders of the back rank are either absent, overloaded, or can be deflected/exchanged.',
+    ],
+    commonMistakes: [
+      'Assuming the back rank is secure just because one rook guards it; rooks can be traded or deflected.',
+      'Failing to create "luft" (e.g. h3 or g3) in your own positions before launching heavy piece adventures.',
+    ],
+    transferablePrinciple:
+      'A king with no escape squares is always a tactical target. Look for sacrifices that remove or deflect the back-rank guardian.',
+  },
+  DEFLECTION: {
+    concept: 'DEFLECTION',
+    title: 'Deflection & Decoy',
+    tagline: 'Forcing an essential defender away from its critical duty',
+    definition:
+      'Deflection forces an enemy piece away from an important square, line, or piece it is currently defending. Once the defender is drawn away, the key square or piece is left undefended for decisive invasion.',
+    recognitionCues: [
+      'An opponent piece is the sole guardian of a critical square or checkmate threat.',
+      'Look for forcing moves (checks, sacrifices, attacks) that compel the defender to abandon its post.',
+    ],
+    commonMistakes: [
+      'Deflecting a piece into a square where it still covers the threat from a different angle.',
+    ],
+    transferablePrinciple:
+      'Identify what keeps your opponent’s position intact. If one piece is holding the dam together, find a way to blow it away or lure it away.',
+  },
+  CLEARANCE: {
+    concept: 'CLEARANCE',
+    title: 'Clearance Sacrifice',
+    tagline: 'Sacrificing an obstruction to open a lethal highway',
+    definition:
+      'A clearance sacrifice involves giving up a piece solely to vacate a critical square, file, or diagonal so that a more lethal piece can occupy or fire through that space.',
+    recognitionCues: [
+      'One of your own pieces blocks your Queen, Rook, or Bishop from delivering a knockout blow.',
+      'The blocking piece can move with check or a forcing capture.',
+    ],
+    commonMistakes: [
+      'Hesitating to sacrifice material when the resulting attacking line is decisive.',
+    ],
+    transferablePrinciple:
+      'Pieces are tools, not trophies. If your own piece is in the way of a game-winning attack, get rid of it with tempo.',
+  },
+  ZWISCHENZUG: {
+    concept: 'ZWISCHENZUG',
+    title: 'Zwischenzug (In-Between Move)',
+    tagline: 'Disrupting an expected sequence with an unexpected intermediate threat',
+    definition:
+      'An intermediate move (often a check or capture) inserted before the expected response, radically shifting the evaluation of an exchange or tactical sequence.',
+    recognitionCues: [
+      'An obvious recapture is expected, but an intermediate check or threat changes everything.',
+      'Opponent moves too quickly expecting an automatic response.',
+    ],
+    commonMistakes: [
+      'Playing automatic recaptures without looking for in-between checks or attacks.',
+    ],
+    transferablePrinciple:
+      'Never play a move automatically. Before every recapture, ask: "Can I insert a forcing check or counter-threat first?"',
+  },
+  OVERLOADING: {
+    concept: 'OVERLOADING',
+    title: 'Overloading',
+    tagline: 'Giving a single defending piece one task too many',
+    definition:
+      'An overloaded piece is assigned to defend two or more critical squares or pieces at the same time. Attacking one of the targets exposes the fact that the piece cannot protect both simultaneously.',
+    recognitionCues: [
+      'A single enemy piece (often a queen or rook) is guarding two distinct threats.',
+      'Striking at one of the defended points collapses the entire defensive structure.',
+    ],
+    commonMistakes: [
+      'Assuming a piece defends a square when it is already tied to defending something more important.',
+    ],
+    transferablePrinciple:
+      'Count defensive responsibilities. If one piece is doing two jobs, strike at one job to compromise the other.',
+  },
+  OPPOSITION: {
+    concept: 'OPPOSITION',
+    title: 'King Opposition & Outflanking',
+    tagline: 'The geometrical duel of kings in pawn endgames',
+    definition:
+      'In king and pawn endgames, opposition occurs when two kings face each other on the same rank, file, or diagonal with exactly one square between them. The player who does NOT have to move holds the opposition, forcing the opponent’s king to yield ground.',
+    recognitionCues: [
+      'Endgame with few pieces and kings in close proximity.',
+      'An odd number of squares between the kings along a straight line.',
+      'Using the opposition to outflank and escort a passed pawn to the promotion square.',
+    ],
+    commonMistakes: [
+      'Pushing the pawn too early instead of securing key squares with the king first.',
+      'Stepping into the opposition voluntarily and giving up the initiative.',
+    ],
+    transferablePrinciple:
+      'In pawn endgames, the King is an active attacking piece. Lead with your king, control key squares, and force the opposing king backward.',
+  },
+  PASSED_PAWNS: {
+    concept: 'PASSED_PAWNS',
+    title: 'Passed Pawns',
+    tagline: 'A pawn with a clear path to becoming a queen',
+    definition:
+      'A passed pawn is a pawn that has no opposing pawns on its file or adjacent files to impede its march toward promotion. Protected passed pawns or outside passed pawns often decide endgames.',
+    recognitionCues: [
+      'Pawns that have surpassed all enemy pawns on adjacent files.',
+      'The "Rule of the Square" determining whether an enemy king can catch the pawn.',
+      'Rooks placed behind passed pawns (Tarrasch rule) to support advancement.',
+    ],
+    commonMistakes: [
+      'Placing rooks in front of your passed pawn instead of behind it.',
+      'Pushing an unsupported passed pawn into the enemy king’s grasp.',
+    ],
+    transferablePrinciple:
+      'Passed pawns must be pushed! But always ensure your king or heavy pieces control the promotion squares ahead.',
+  },
+  REMOVING_DEFENDER: {
+    concept: 'REMOVING_DEFENDER',
+    title: 'Removing the Defender',
+    tagline: 'Eliminating the linchpin that protects the prize',
+    definition:
+      'When an opponent piece is defended by only one other piece, you can capture or deflect that defender, leaving the target piece ripe for the taking.',
+    recognitionCues: [
+      'An opponent piece protected by exactly one guardian.',
+      'Ability to capture or drive away that guardian with equal or lesser material.',
+    ],
+    commonMistakes: [
+      'Failing to notice what other squares the defender was watching.',
+    ],
+    transferablePrinciple:
+      'Look not just at what is undefended, but at what is barely defended. Eliminate the guardian, collect the spoils.',
+  },
+  CHESS_BOARD: {
+    concept: 'CHESS_BOARD',
+    title: 'Board Geometry & Sightlines',
+    tagline: 'Understanding squares, files, ranks, and diagonals',
+    definition: 'Mastering the 64 squares, ranks, files, and color complexes that govern all piece interactions.',
+    recognitionCues: ['Open files for rooks', 'Long diagonals for bishops', 'Outposts for knights'],
+    commonMistakes: ['Neglecting control of key central squares.'],
+    transferablePrinciple: 'Control the center, open lines for your heavy pieces, and restrict your opponent.',
+  },
+  PIECE_MOVEMENT: {
+    concept: 'PIECE_MOVEMENT',
+    title: 'Piece Dynamics & Efficiency',
+    tagline: 'Maximizing the active potential of every piece',
+    definition: 'Positioning your army where pieces exert maximum pressure across the board.',
+    recognitionCues: ['Pieces biting on granite vs active pieces cutting across enemy lines.'],
+    commonMistakes: ['Moving the same piece repeatedly in the opening.'],
+    transferablePrinciple: 'An active piece is worth more than its nominal point value.',
+  },
+  CAPTURING: {
+    concept: 'CAPTURING',
+    title: 'Counting & Exchanges',
+    tagline: 'Material calculation and trades that favor you',
+    definition: 'Accurately counting attackers and defenders on a contested square.',
+    recognitionCues: ['Hanging pieces', 'Overloaded defenders', 'Piece value hierarchy (Q > R > B/N > P)'],
+    commonMistakes: ['Recapturing with the wrong piece or failing to count all attackers.'],
+    transferablePrinciple: 'Calculate all forcing captures to the end before making a move.',
+  },
+  CHECK: {
+    concept: 'CHECK',
+    title: 'The Forcing Power of Check',
+    tagline: 'Dictating the game by attacking the enemy king',
+    definition: 'A direct attack on the opponent’s king, limiting their legal options to move, block, or capture.',
+    recognitionCues: ['Exposed king diagonals', 'Open files leading to king', 'Checks with double attacks'],
+    commonMistakes: ['Giving useless checks that only help the enemy king improve its position.'],
+    transferablePrinciple: 'Give checks with a purpose—to restrict the king or win material, never just for the sake of checking.',
+  },
+  CHECKMATE: {
+    concept: 'CHECKMATE',
+    title: 'Delivering Checkmate',
+    tagline: 'The ultimate objective of chess',
+    definition: 'Attacking the enemy king with no legal escape, block, or capture available.',
+    recognitionCues: ['King trapped on board edge or corner', 'Mating nets with two or more cooperating pieces'],
+    commonMistakes: ['Missing checkmate because of focusing on capturing material.'],
+    transferablePrinciple: 'Checkmate ends the game immediately. Material advantage is meaningless if checkmate is on the board.',
+  },
+  STALEMATE: {
+    concept: 'STALEMATE',
+    title: 'Stalemate & Swindles',
+    tagline: 'Turning defeat into a draw through zero legal moves',
+    definition: 'When the player whose turn it is has no legal moves and is NOT in check, the game ends in a draw.',
+    recognitionCues: ['King trapped with no legal moves', 'Sacrificing all other pieces to leave only a trapped king'],
+    commonMistakes: ['Carelessly playing queen moves in winning endgames that suffocate the king into stalemate.'],
+    transferablePrinciple: 'Always ensure the opponent has at least one legal move when hunting down a solo king.',
+  },
+  CASTLING: {
+    concept: 'CASTLING',
+    title: 'King Safety & Castling',
+    tagline: 'Sheltering the monarch while activating the rook',
+    definition: 'A special dual move moving the King two squares and hopping the Rook over to secure safety.',
+    recognitionCues: ['Uncastled kings caught in the center', 'Timing king safety before attacking'],
+    commonMistakes: ['Leaving the king in the center too long while opening the position.'],
+    transferablePrinciple: 'Castle early, connect your rooks, and never start a central attack with your king exposed.',
+  },
+  EN_PASSANT: {
+    concept: 'EN_PASSANT',
+    title: 'En Passant',
+    tagline: 'The special pawn capture in passing',
+    definition: 'Capturing an enemy pawn that moves two squares past your fifth-rank pawn as if it had moved only one square.',
+    recognitionCues: ['Enemy pawn moving two squares past your advanced pawn.'],
+    commonMistakes: ['Waiting a move—en passant must be played immediately on the turn following the two-square jump.'],
+    transferablePrinciple: 'Use en passant to prevent the opponent from locking down the board or bypassing your pawn chains.',
+  },
+  PAWN_PROMOTION: {
+    concept: 'PAWN_PROMOTION',
+    title: 'Pawn Promotion',
+    tagline: 'Transforming a humble foot soldier into a queen',
+    definition: 'Advancing a pawn to the eighth rank to promote it into a Queen, Rook, Bishop, or Knight.',
+    recognitionCues: ['Passed pawns escorted by friendly pieces', 'Underpromotion to Knight to deliver check with tempo'],
+    commonMistakes: ['Promoting to a queen blindly when underpromotion avoids stalemate or gives immediate checkmate.'],
+    transferablePrinciple: 'Every pawn is a potential queen. Guard your passed pawns with your life.',
+  },
+  PIECE_VALUES: {
+    concept: 'PIECE_VALUES',
+    title: 'Piece Value Hierarchy',
+    tagline: 'Weighing trades and sacrifices accurately',
+    definition: 'Standard piece valuation (Pawn=1, Knight/Bishop=3, Rook=5, Queen=9, King=infinite).',
+    recognitionCues: ['Winning the exchange (Rook for Bishop/Knight)', 'Sacrificing for checkmate'],
+    commonMistakes: ['Treating point values as absolute rather than factoring in piece activity.'],
+    transferablePrinciple: 'Position and activity can trump material points, but sound calculation must justify the trade.',
+  },
+  SMOTHERED_MATE: {
+    concept: 'SMOTHERED_MATE',
+    title: 'Smothered Mate',
+    tagline: 'The knight checkmate against a king suffocated by its own pieces',
+    definition: 'A checkmate delivered by a knight where the king cannot escape because all surrounding squares are occupied by friendly pieces.',
+    recognitionCues: ['King trapped in the corner surrounded by its own rooks and pawns', 'Queen sacrifices on g8/b8 that force a friendly piece to block the king'],
+    commonMistakes: ['Missing the preliminary queen sacrifice that forces the friendly piece to box the king in.'],
+    transferablePrinciple: 'When a king is suffocated by its own pieces, a single knight jump can be deadly.',
+  },
+  DECOY: {
+    concept: 'DECOY',
+    title: 'Decoy',
+    tagline: 'Luring an enemy piece onto a doomed square',
+    definition: 'Sacrificing material to compel an enemy king or piece onto a square where it will be subjected to a fatal tactic.',
+    recognitionCues: ['Luring the king onto a forkable square or a line vulnerable to skewer.'],
+    commonMistakes: ['Sacrificing without ensuring the follow-up tactic is strictly forcing.'],
+    transferablePrinciple: 'If a piece is not on the right square for your tactic, force it there with a decoy sacrifice.',
+  },
+  INTERFERENCE: {
+    concept: 'INTERFERENCE',
+    title: 'Interference',
+    tagline: 'Severing the communication between two defending pieces',
+    definition: 'Placing a piece on the intersection of two defensive lines to block communication between defenders.',
+    recognitionCues: ['Two opponent pieces defending each other or a critical square along lines that intersect.'],
+    commonMistakes: ['Interfering with a piece that can be captured without creating a secondary threat.'],
+    transferablePrinciple: 'Severing a defensive line is as effective as capturing the defender itself.',
+  },
+  ATTRACTION: {
+    concept: 'ATTRACTION',
+    title: 'Attraction',
+    tagline: 'Compelling the opponent monarch into the firing squad',
+    definition: 'Drawing an enemy piece or king to an unfavorable square through forcing checks or sacrifices.',
+    recognitionCues: ['Exposing the king to open files and coordinated heavy piece attacks.'],
+    commonMistakes: ['Failing to calculate all escape avenues.'],
+    transferablePrinciple: 'Bring the enemy king forward into your territory where all your pieces can attack it.',
+  },
+  DEVELOPMENT: {
+    concept: 'DEVELOPMENT',
+    title: 'Rapid Piece Mobilization',
+    tagline: 'Bringing every soldier into the fight with speed and harmony',
+    definition: 'Moving minor pieces off the back rank to active squares to contest the center and prepare castling.',
+    recognitionCues: ['Unmoved knights and bishops', 'Early queen moves that get harassed'],
+    commonMistakes: ['Pawn hunting in the opening while pieces sleep on the home rank.'],
+    transferablePrinciple: 'Develop with threats, control the center, and secure your king before attacking.',
+  },
+  CENTER_CONTROL: {
+    concept: 'CENTER_CONTROL',
+    title: 'Center Control',
+    tagline: 'He who controls the center controls the board',
+    definition: 'Controlling the central squares (e4, d4, e5, d5) directly with pawns or from a distance with pieces.',
+    recognitionCues: ['Pawn duos in the center', 'Knights jumping into central outposts'],
+    commonMistakes: ['Surrendering the center without counterplay on the wings.'],
+    transferablePrinciple: 'Central dominance allows your pieces to switch effortlessly between kingside and queenside.',
+  },
+  KING_SAFETY: {
+    concept: 'KING_SAFETY',
+    title: 'King Safety',
+    tagline: 'The supreme priority of chess strategy',
+    definition: 'Ensuring your monarch is sheltered behind pawns and protected from open lines of enemy fire.',
+    recognitionCues: ['Exposed king diagonals', 'Missing pawn shield', 'Opponent pieces massing on your flank'],
+    commonMistakes: ['Launching an attack before your own king has found refuge.'],
+    transferablePrinciple: 'Before launching an adventure on the enemy flank, verify that your own king is bulletproof.',
+  },
+  WEAK_SQUARES: {
+    concept: 'WEAK_SQUARES',
+    title: 'Weak Squares & Holes',
+    tagline: 'Infiltrating squares that can never again be protected by pawns',
+    definition: 'Squares in a player’s camp that can never be defended by pawns, creating permanent footholds for enemy pieces.',
+    recognitionCues: ['Pawns advanced too far leaving holes behind them', 'Outposts on the 5th and 6th ranks'],
+    commonMistakes: ['Pushing pawns impulsively without realizing pawns can never move backward.'],
+    transferablePrinciple: 'Pawn moves create permanent weaknesses. Look for enemy holes and occupy them with knights.',
+  },
+  OUTPOSTS: {
+    concept: 'OUTPOSTS',
+    title: 'Knights on Outposts',
+    tagline: 'An octopus knight dominating enemy territory',
+    definition: 'A square (usually on the 4th, 5th, or 6th rank) protected by a friendly pawn that cannot be driven away by enemy pawns.',
+    recognitionCues: ['Central hole in enemy pawn structure', 'Knight anchored by a pawn'],
+    commonMistakes: ['Trading an active outpost knight for an opponent passive bishop.'],
+    transferablePrinciple: 'A knight firmly planted on an outpost in enemy territory is often worth a rook.',
+  },
+  OPEN_FILES: {
+    concept: 'OPEN_FILES',
+    title: 'Open Files & Infiltration',
+    tagline: 'Highways for rooks to conquer the 7th rank',
+    definition: 'Files with no pawns on them, allowing rooks to penetrate deep into the opponent’s position.',
+    recognitionCues: ['Pawn exchanges creating open files', 'Doubling rooks on an open file'],
+    commonMistakes: ['Controlling an open file without using it to invade the 7th or 8th rank.'],
+    transferablePrinciple: 'Rooks belong on open files; the purpose of controlling an open file is to invade the 7th rank.',
+  },
+  PAWN_STRUCTURE: {
+    concept: 'PAWN_STRUCTURE',
+    title: 'Pawn Structure & Skeletons',
+    tagline: 'The backbone of the chess position',
+    definition: 'The arrangement of pawns that dictates plans, piece placement, and endgame prospects.',
+    recognitionCues: ['Doubled pawns, isolated pawns, backward pawns, pawn chains'],
+    commonMistakes: ['Creating unnecessary pawn weaknesses in the quest for quick tactics.'],
+    transferablePrinciple: 'Pawns are the soul of chess. Fix enemy pawn weaknesses and target them ruthlessly.',
+  },
+  ROOK_ENDGAMES: {
+    concept: 'ROOK_ENDGAMES',
+    title: 'Rook Endgames & The 7th Rank',
+    tagline: 'The most common and nuanced endgames in chess',
+    definition: 'Endgames featuring rooks and pawns where rook activity and cutoffs determine the outcome.',
+    recognitionCues: ['Lucena position (bridge building)', 'Philidor position (third-rank defense)', 'Rook behind passed pawn'],
+    commonMistakes: ['Playing passively with the rook instead of cutting off the enemy king or attacking pawns from behind.'],
+    transferablePrinciple: 'Active rook activity is paramount in rook endings. An active rook is often worth more than a pawn.',
+  },
+  QUEEN_ENDGAMES: {
+    concept: 'QUEEN_ENDGAMES',
+    title: 'Queen Endgames & Perpetual Checks',
+    tagline: 'Navigating razor-sharp queen endings and mating nets',
+    definition: 'Endgames where passed pawns and perpetual check calculations dominate.',
+    recognitionCues: ['Queen escorting passed pawn', 'King seeking shelter from endless checks'],
+    commonMistakes: ['Allowing perpetual check when up material.'],
+    transferablePrinciple: 'Centralize your queen to maximize checks and block opponent counterplay.',
+  },
+  CANDIDATE_MOVES: {
+    concept: 'CANDIDATE_MOVES',
+    title: 'Candidate Moves & Kotov Method',
+    tagline: 'Discipline in calculation: Checks, Captures, and Threats first',
+    definition: 'The methodical process of identifying all forcing candidate moves before calculating variations deeply.',
+    recognitionCues: ['Complex tactical positions with multiple tempting moves'],
+    commonMistakes: ['Falling in love with the first move that looks good without examining all forcing alternatives.'],
+    transferablePrinciple: 'Always list your candidate moves first: Checks, Captures, and Threats (C-C-T). Then calculate to the end.',
+  },
+};

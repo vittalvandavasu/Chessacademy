@@ -13,6 +13,7 @@ export interface ChessboardProps {
   arrowGuide?: { from: string; to: string; color?: string }[];
   showCoordinates?: boolean;
   className?: string;
+  resetKey?: number;
 }
 
 export const Chessboard: React.FC<ChessboardProps> = ({
@@ -24,6 +25,7 @@ export const Chessboard: React.FC<ChessboardProps> = ({
   arrowGuide = [],
   showCoordinates = true,
   className = '',
+  resetKey = 0,
 }) => {
   const engine = useMemo(() => new ChessEngine(fen), [fen]);
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
@@ -33,13 +35,14 @@ export const Chessboard: React.FC<ChessboardProps> = ({
   const [pendingPromotion, setPendingPromotion] = useState<{ from: Square; to: Square } | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
-  // Sync engine when fen prop changes
+  // Sync engine when fen or resetKey changes
   useEffect(() => {
     engine.load(fen);
     setSelectedSquare(null);
     setLegalDestinations([]);
     setPendingPromotion(null);
-  }, [fen, engine]);
+    setLastMove(null);
+  }, [fen, engine, resetKey]);
 
   const ranks = useMemo(() => {
     const list = [8, 7, 6, 5, 4, 3, 2, 1];
@@ -177,7 +180,7 @@ export const Chessboard: React.FC<ChessboardProps> = ({
 
   return (
     <div className={`relative select-none max-w-full aspect-square ${className}`} ref={boardRef}>
-      <div className="w-full h-full grid grid-cols-8 grid-rows-8 border-2 border-slate-800 rounded-lg overflow-hidden shadow-2xl bg-slate-900">
+      <div className="w-full h-full grid grid-cols-8 grid-rows-8 border-2 border-slate-800 rounded-xl overflow-hidden shadow-2xl bg-slate-950">
         {ranks.map((rank) =>
           files.map((file) => {
             const square = `${file}${rank}` as Square;
@@ -199,43 +202,45 @@ export const Chessboard: React.FC<ChessboardProps> = ({
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, square)}
                 className={`relative flex items-center justify-center transition-colors duration-150 cursor-pointer ${
-                  isLight ? 'bg-[#3b475a]' : 'bg-[#1b2333]'
+                  isLight ? 'bg-[#ebecd0]' : 'bg-[#739552]'
                 } ${
-                  isLastMoveSquare ? '!bg-amber-500/25' : ''
+                  isLastMoveSquare ? '!bg-[#f5f682]/60' : ''
                 } ${
-                  isCustomHighlight ? '!bg-emerald-500/30 ring-2 ring-emerald-400 ring-inset' : ''
+                  isCustomHighlight ? '!bg-emerald-400/50 ring-2 ring-emerald-500 ring-inset' : ''
                 } ${
-                  isSelected ? '!bg-indigo-500/40 ring-2 ring-indigo-400 ring-inset' : ''
+                  isSelected ? '!bg-[#bbcb2b]/80 ring-2 ring-amber-300 ring-inset' : ''
                 } ${
-                  isCheckSquare ? '!bg-red-500/40 animate-pulse ring-2 ring-red-500 ring-inset' : ''
+                  isCheckSquare ? '!bg-red-500/70 animate-pulse ring-4 ring-red-600 ring-inset' : ''
                 }`}
               >
-                {/* Board coordinates */}
+                {/* Board coordinates - rank on first file */}
                 {showCoordinates && file === files[0] && (
                   <span
-                    className={`absolute top-0.5 left-1 text-[10px] font-semibold pointer-events-none ${
-                      isLight ? 'text-slate-400/80' : 'text-slate-500/80'
+                    className={`absolute top-1 left-1.5 text-[10px] font-bold pointer-events-none ${
+                      isLight ? 'text-[#739552]' : 'text-[#ebecd0]'
                     }`}
                   >
                     {rank}
                   </span>
                 )}
+                {/* Board coordinates - file on last rank */}
                 {showCoordinates && rank === ranks[ranks.length - 1] && (
                   <span
-                    className={`absolute bottom-0.5 right-1 text-[10px] font-semibold pointer-events-none ${
-                      isLight ? 'text-slate-400/80' : 'text-slate-500/80'
+                    className={`absolute bottom-0.5 right-1.5 text-[10px] font-bold pointer-events-none ${
+                      isLight ? 'text-[#739552]' : 'text-[#ebecd0]'
                     }`}
                   >
                     {file}
                   </span>
                 )}
 
-                {/* Legal destination indicator */}
+                {/* Legal destination indicator: empty square dot */}
                 {isLegalDest && !piece && (
-                  <div className="absolute w-3 h-3 rounded-full bg-emerald-400/60 pointer-events-none transition-transform hover:scale-125" />
+                  <div className="absolute w-3.5 h-3.5 rounded-full bg-black/25 pointer-events-none transition-transform hover:scale-125" />
                 )}
+                {/* Legal destination indicator: capture target ring */}
                 {isLegalDest && piece && (
-                  <div className="absolute inset-1 rounded-full border-4 border-emerald-400/70 pointer-events-none" />
+                  <div className="absolute inset-1 rounded-full border-4 border-black/30 pointer-events-none animate-pulse" />
                 )}
 
                 {/* Piece */}
@@ -243,7 +248,7 @@ export const Chessboard: React.FC<ChessboardProps> = ({
                   <div
                     draggable={interactive && piece.color === engine.turn}
                     onDragStart={(e) => handleDragStart(e, square)}
-                    className={`w-[84%] h-[84%] flex items-center justify-center transition-transform active:scale-95 ${
+                    className={`w-[88%] h-[88%] flex items-center justify-center transition-transform active:scale-95 drop-shadow-sm ${
                       interactive && piece.color === engine.turn ? 'cursor-grab active:cursor-grabbing hover:scale-105' : 'cursor-default'
                     }`}
                   >
