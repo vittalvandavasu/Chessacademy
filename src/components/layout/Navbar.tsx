@@ -1,11 +1,24 @@
 import React from 'react';
 import { UserStats } from '../../types/chess';
 import { UserProfile } from '../../services/storageService';
-import { Flame, Zap, User } from 'lucide-react';
+import { ChessCadetLogo } from '../branding/ChessCadetLogo';
+import {
+  Flame,
+  Zap,
+  Search,
+  BookOpen,
+  Compass,
+  Target,
+  GraduationCap,
+  TrendingUp,
+  Users,
+  ShieldAlert,
+} from 'lucide-react';
 
 export type NavTab =
   | 'home'
   | 'learn'
+  | 'openings'
   | 'practice'
   | 'puzzles'
   | 'progress'
@@ -20,6 +33,7 @@ interface NavbarProps {
   onOpenProfile?: () => void;
   onOpenAuth?: () => void;
   onResetDemo?: () => void;
+  onOpenSearch?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -30,90 +44,114 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenProfile,
   onOpenAuth,
   onResetDemo,
+  onOpenSearch,
 }) => {
-  const navLinks: { id: NavTab; label: string }[] = [
-    { id: 'home', label: 'Home' },
-    { id: 'learn', label: 'Learn' },
-    { id: 'practice', label: 'Practice' },
-    { id: 'puzzles', label: 'Puzzles' },
-    { id: 'progress', label: 'Progress' },
-    { id: 'classroom', label: 'Classroom' },
-    { id: 'admin', label: 'Admin' },
+  const navLinks: { id: NavTab; label: string; icon: any }[] = [
+    { id: 'home', label: 'Dashboard', icon: TrendingUp },
+    { id: 'learn', label: 'Curriculum', icon: BookOpen },
+    { id: 'openings', label: 'Openings', icon: Compass },
+    { id: 'puzzles', label: 'Tactics', icon: Target },
+    { id: 'practice', label: 'Practice', icon: Zap },
+    { id: 'progress', label: 'Mastery', icon: GraduationCap },
+    { id: 'classroom', label: 'Classroom', icon: Users },
+    { id: 'admin', label: 'Admin', icon: ShieldAlert },
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        {/* Zone 1: Single text element wordmark */}
+    <header className="sticky top-0 z-40 w-full bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+        {/* Zone 1: Redesigned Logo */}
         <button
           onClick={() => onSelectTab('home')}
-          className="text-xl font-bold tracking-tight text-slate-100 hover:text-emerald-400 transition-colors font-display flex items-center gap-2"
+          className="focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-xl"
+          title="ChessCadet Home"
         >
-          <span>ChessCadet</span>
+          <ChessCadetLogo size="sm" showWordmark={true} />
         </button>
 
-        {/* Zone 2: Clean text navigation links */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+        {/* Zone 2: Navigation Links (Desktop) */}
+        <nav className="hidden lg:flex items-center gap-1">
           {navLinks.map((link) => {
             const isActive = activeTab === link.id;
+            const Icon = link.icon;
             return (
               <button
                 key={link.id}
                 onClick={() => onSelectTab(link.id)}
-                className={`transition-colors py-1 relative whitespace-nowrap ${
-                  isActive ? 'text-emerald-400 font-semibold' : 'text-slate-400 hover:text-slate-200'
+                className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  isActive
+                    ? 'bg-slate-800/90 text-emerald-400 shadow-sm border border-slate-700/80'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
                 }`}
               >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-400' : 'text-slate-500'}`} />
                 <span>{link.label}</span>
-                {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400 rounded-full" />
-                )}
               </button>
             );
           })}
         </nav>
 
-        {/* Zone 3: 1-2 primary actions and user gamification metrics */}
-        <div className="flex items-center gap-4 text-xs font-medium">
-          {/* Streak indicator */}
-          <div
-            className="flex items-center gap-1.5 text-amber-400 font-mono-nums"
-            title={`${stats.currentStreakDays}-day study streak`}
-          >
-            <Flame className="w-4 h-4 fill-amber-500/20 text-amber-500" />
-            <span className="font-semibold text-slate-200">{stats.currentStreakDays}d</span>
+        {/* Zone 3: Quick Omni-Search + Metrics & Profile */}
+        <div className="flex items-center gap-3">
+          {/* Quick Search Shortcut Trigger */}
+          {onOpenSearch && (
+            <button
+              onClick={onOpenSearch}
+              className="flex items-center gap-2 py-1.5 px-3 rounded-lg bg-slate-900/90 hover:bg-slate-850 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs transition-colors shadow-inner"
+              title="Quick Search (⌘K / Ctrl+K)"
+            >
+              <Search className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">Search...</span>
+              <kbd className="hidden sm:inline text-[10px] font-mono text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
+                ⌘K
+              </kbd>
+            </button>
+          )}
+
+          {/* Gamification Stats: Streak & XP */}
+          <div className="hidden sm:flex items-center gap-3 text-xs pl-2 border-l border-slate-850">
+            {/* Streak */}
+            <div
+              className="flex items-center gap-1 font-mono-nums text-amber-400 font-semibold"
+              title={`${stats.currentStreakDays}-day study streak`}
+            >
+              <Flame className="w-4 h-4 fill-amber-500/20 text-amber-500" />
+              <span>{stats.currentStreakDays}d</span>
+            </div>
+
+            {/* Level & XP */}
+            <div
+              className="flex items-center gap-1 font-mono-nums text-emerald-400 font-semibold"
+              title={`Level ${stats.level} · ${stats.totalXp} XP`}
+            >
+              <Zap className="w-4 h-4 text-emerald-400" />
+              <span className="text-slate-200">{stats.totalXp} XP</span>
+            </div>
           </div>
 
-          {/* XP & Level */}
-          <div
-            className="hidden sm:flex items-center gap-1.5 text-emerald-400 font-mono-nums"
-            title={`${stats.totalXp} XP (Level ${stats.level})`}
-          >
-            <Zap className="w-4 h-4 text-emerald-400" />
-            <span className="text-slate-200 font-semibold">{stats.totalXp} XP</span>
-          </div>
-
-          {/* User profile / demo trigger */}
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
+          {/* User Profile Avatar & Switcher */}
+          <div className="flex items-center gap-2 pl-2 border-l border-slate-800/80">
             <button
               onClick={onOpenProfile}
-              className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
-              title="User Profile"
+              className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors group"
+              title="Open User Profile"
             >
-              <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-emerald-400">
+              <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-750 flex items-center justify-center text-xs font-bold text-emerald-400 group-hover:border-emerald-500/50 transition-colors shadow-sm">
                 {user.name.split(' ').map((n) => n[0]).join('')}
               </div>
-              <div className="hidden lg:flex flex-col text-left">
-                <span className="text-xs font-medium text-slate-200 leading-tight">
+              <div className="hidden xl:flex flex-col text-left">
+                <span className="text-xs font-semibold text-slate-200 leading-tight">
                   {user.name.split(' ')[0]}
                 </span>
-                <span className={`text-[9px] font-mono leading-tight ${
-                  user.role === 'ADMIN'
-                    ? 'text-amber-400'
-                    : user.role === 'TEACHER'
-                    ? 'text-indigo-400'
-                    : 'text-emerald-400'
-                }`}>
+                <span
+                  className={`text-[10px] font-mono leading-tight ${
+                    user.role === 'ADMIN'
+                      ? 'text-amber-400 font-bold'
+                      : user.role === 'TEACHER'
+                      ? 'text-indigo-400 font-bold'
+                      : 'text-emerald-400'
+                  }`}
+                >
                   {user.role || 'STUDENT'}
                 </span>
               </div>
@@ -122,8 +160,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             {onOpenAuth && (
               <button
                 onClick={onOpenAuth}
-                className="py-1 px-2 rounded bg-slate-800 hover:bg-slate-750 text-[11px] text-slate-300 hover:text-white border border-slate-700 transition-colors hidden sm:inline"
-                title="Switch role persona or sign in"
+                className="py-1 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-[11px] font-medium text-slate-300 hover:text-white border border-slate-800 transition-colors hidden md:inline"
+                title="Switch persona or sign in"
               >
                 Switch Role
               </button>
@@ -132,7 +170,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {onResetDemo && (
               <button
                 onClick={onResetDemo}
-                className="hidden xl:inline text-[11px] text-slate-500 hover:text-slate-300 transition-colors underline"
+                className="hidden 2xl:inline text-[11px] text-slate-500 hover:text-slate-300 transition-colors underline"
                 title="Reset demo data to default baseline"
               >
                 Reset
@@ -142,21 +180,24 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Mobile subnav */}
-      <div className="md:hidden flex items-center justify-around border-t border-slate-850 px-2 py-2 overflow-x-auto text-xs bg-slate-900/60">
-        {navLinks.map((link) => (
-          <button
-            key={link.id}
-            onClick={() => onSelectTab(link.id)}
-            className={`px-2.5 py-1 rounded transition-colors whitespace-nowrap ${
-              activeTab === link.id
-                ? 'text-emerald-400 font-semibold'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            {link.label}
-          </button>
-        ))}
+      {/* Mobile / Tablet Horizontal Navigation */}
+      <div className="lg:hidden flex items-center gap-1 px-3 py-2 border-t border-slate-850 overflow-x-auto text-xs bg-slate-950/80">
+        {navLinks.map((link) => {
+          const isActive = activeTab === link.id;
+          return (
+            <button
+              key={link.id}
+              onClick={() => onSelectTab(link.id)}
+              className={`py-1 px-2.5 rounded-md whitespace-nowrap transition-colors text-xs font-medium ${
+                isActive
+                  ? 'bg-slate-800 text-emerald-400 font-semibold border border-slate-700'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {link.label}
+            </button>
+          );
+        })}
       </div>
     </header>
   );

@@ -157,6 +157,7 @@ const STORAGE_KEYS = {
   STATS: 'chesscadet_user_stats',
   MASTERY: 'chesscadet_concept_mastery',
   COMPLETED_LESSONS: 'chesscadet_completed_lessons',
+  COMPLETED_OPENINGS: 'chesscadet_completed_openings',
   DAILY_PRACTICE: 'chesscadet_daily_practice',
   ACHIEVEMENTS: 'chesscadet_achievements',
   CUSTOM_EXERCISES: 'chesscadet_custom_exercises',
@@ -230,6 +231,29 @@ export class StorageService {
     if (!completed.includes(lessonId)) {
       completed.push(lessonId);
       localStorage.setItem(STORAGE_KEYS.COMPLETED_LESSONS, JSON.stringify(completed));
+
+      const stats = this.getStats();
+      stats.lessonsCompleted += 1;
+      stats.totalXp += xpReward;
+      stats.level = Math.floor(stats.totalXp / 600) + 1;
+      this.saveStats(stats);
+    }
+  }
+
+  public static getCompletedOpenings(): string[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.COMPLETED_OPENINGS);
+      return data ? JSON.parse(data) : ['op-italian-game'];
+    } catch {
+      return ['op-italian-game'];
+    }
+  }
+
+  public static completeOpening(openingId: string, xpReward: number): void {
+    const completed = this.getCompletedOpenings();
+    if (!completed.includes(openingId)) {
+      completed.push(openingId);
+      localStorage.setItem(STORAGE_KEYS.COMPLETED_OPENINGS, JSON.stringify(completed));
 
       const stats = this.getStats();
       stats.lessonsCompleted += 1;

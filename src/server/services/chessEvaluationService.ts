@@ -1,9 +1,23 @@
 import { Chess } from 'chess.js';
 import { prisma } from '../db/prisma';
 
+export type MoveVerdict =
+  | 'DECISIVE_FORK'
+  | 'DECISIVE_PIN'
+  | 'DECISIVE_SKEWER'
+  | 'CHECKMATE'
+  | 'TACTICAL_WIN'
+  | 'BLUNDER'
+  | 'HANGING_PIECE'
+  | 'PREMATURE_CHECK'
+  | 'MISCALCULATION'
+  | 'INACCURACY'
+  | 'ILLEGAL';
+
 export interface MoveEvaluationResult {
   isLegal: boolean;
   isSuccess: boolean;
+  verdict?: MoveVerdict;
   playedSan?: string;
   resultingFen?: string;
   isCheck?: boolean;
@@ -17,7 +31,7 @@ export interface MoveEvaluationResult {
 
 export class ChessEvaluationService {
   /**
-   * Server-authoritative evaluation of an exercise move attempt
+   * Server-authoritative mathematical and tactical evaluation of an exercise move attempt
    */
   public static async evaluateAttempt(
     exerciseId: string,
@@ -72,6 +86,7 @@ export class ChessEvaluationService {
       return {
         isLegal: false,
         isSuccess: false,
+        verdict: 'ILLEGAL',
         explanation: 'Illegal chess move submitted according to FIDE rules.',
         isSequenceComplete: false,
       };
@@ -81,6 +96,7 @@ export class ChessEvaluationService {
       return {
         isLegal: false,
         isSuccess: false,
+        verdict: 'ILLEGAL',
         explanation: 'Illegal move rejected by server engine.',
         isSequenceComplete: false,
       };
@@ -89,8 +105,30 @@ export class ChessEvaluationService {
     const playedSan = playedMove.san;
     const cleanPlayed = playedSan.replace(/[+#?!]/g, '').trim();
     const uci = `${submission.from}${submission.to}`;
+    const givesCheck = chess.inCheck();
+    const givesCheckmate = chess.isCheckmate();
 
-    // Validate if move matches the expected step or target moves
+    // Check if the user's move hangs the piece (opponent can simply capture it for free)
+    const opponentLegalMoves = chess.moves({ verbose: true });
+    const freeCaptures = opponentLegalMoves.filter((m) => m.to === playedMove.to);
+    let isHangingBlunder = false;
+    let refutationCaptureSan = '';
+
+    if (freeCaptures.length > 0 && !givesCheckmate) {
+      for (const cap of freeCaptures) {
+        // Sim capture to see if user has recaptures
+        const simAfterCap = new Chess(chess.fen());
+        simAfterCap.move(cap.san);
+        const userRecaptures = simAfterCap.moves({ verbose: true }).filter((m) => m.to === playedMove.to);
+        if (userRecaptures.length === 0) {
+          isHangingBlunder = true;
+          refutationCaptureSan = cap.san;
+          break;
+        }
+      }
+    }
+
+    // Validate if move matches the verified solution sequence or target moves
     let isCorrect = false;
     let opponentReplySan: string | undefined = undefined;
     let opponentReplyFen: string | undefined = undefined;
@@ -116,10 +154,46 @@ export class ChessEvaluationService {
       );
     }
 
+    // TRUTH GATE: A hanging blunder can NEVER be considered correct!
+    if (isHangingBlunder && !isCorrect) {
+      return {
+        isLegal: true,
+        isSuccess: false,
+        verdict: 'HANGING_PIECE',
+        playedSan,
+        resultingFen: chess.fen(),
+        isCheck: givesCheck,
+        isCheckmate: false,
+        explanation: `Blunder! You played ${playedSan}, but Black can simply respond with ${refutationCaptureSan} capturing your ${playedMove.piece === 'n' ? 'knight' : playedMove.piece === 'r' ? 'rook' : playedMove.piece === 'b' ? 'bishop' : playedMove.piece === 'q' ? 'queen' : 'piece'} for free!`,
+        isSequenceComplete: false,
+      };
+    }
+
+    // Determine accurate, truthful verdict
+    let verdict: MoveVerdict = 'INACCURACY';
+    if (isCorrect) {
+      if (givesCheckmate) verdict = 'CHECKMATE';
+      else if (exercise.conceptKey === 'FORK') verdict = 'DECISIVE_FORK';
+      else if (exercise.conceptKey === 'PIN') verdict = 'DECISIVE_PIN';
+      else if (exercise.conceptKey === 'SKEWER') verdict = 'DECISIVE_SKEWER';
+      else verdict = 'TACTICAL_WIN';
+    } else if (givesCheck) {
+      verdict = 'PREMATURE_CHECK';
+    } else if (isHangingBlunder) {
+      verdict = 'HANGING_PIECE';
+    } else {
+      verdict = 'MISCALCULATION';
+    }
+
     const isSequenceComplete = isCorrect && (stepIndex >= solutionSequence.length - 1 || !opponentReplySan);
 
-    // Look for common mistake pedagogical feedback
-    let explanation = isCorrect ? exercise.explanation : 'Not quite the best move. Check king safety and hanging pieces.';
+    // Truthful pedagogical explanation
+    let explanation = isCorrect
+      ? exercise.explanation
+      : givesCheck
+      ? `You gave check with ${playedSan}, but check alone does not win material here. Look for a forcing tactical combination.`
+      : 'Not quite the best move. Check king safety and calculate opponent forcing replies.';
+
     if (!isCorrect && exercise.commonMistakes) {
       try {
         const mistakes = JSON.parse(exercise.commonMistakes);
@@ -134,10 +208,11 @@ export class ChessEvaluationService {
     return {
       isLegal: true,
       isSuccess: isCorrect,
+      verdict,
       playedSan,
       resultingFen: chess.fen(),
-      isCheck: chess.inCheck(),
-      isCheckmate: chess.isCheckmate(),
+      isCheck: givesCheck,
+      isCheckmate: givesCheckmate,
       explanation,
       opponentReplySan,
       opponentReplyFen,

@@ -1,6 +1,7 @@
 export interface AttemptResponse {
   isLegal: boolean;
   isSuccess: boolean;
+  verdict?: string;
   playedSan?: string;
   resultingFen?: string;
   isCheck?: boolean;

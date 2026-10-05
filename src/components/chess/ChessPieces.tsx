@@ -1,217 +1,559 @@
 import React from 'react';
+import { PieceSymbol } from 'chess.js';
+
+export type PieceType = PieceSymbol | 'p' | 'n' | 'b' | 'r' | 'q' | 'k';
+
+export type PieceSet = 'neo' | 'staunton' | 'wood';
 
 interface PieceProps {
   color: 'w' | 'b';
   className?: string;
+  set?: PieceSet;
 }
 
-export const KingPiece: React.FC<PieceProps> = ({ color, className = 'w-full h-full' }) => {
+/**
+ * World-Class Tournament & Chess.com-Grade Vector Chess Pieces
+ * Meticulously crafted vector geometries with authentic FIDE & Neo proportions,
+ * crisp outlines, weighted bases, and refined interior detail lines.
+ */
+
+// Colors for White & Black pieces across themes
+const PIECE_THEME_COLORS = {
+  neo: {
+    w: {
+      fill: '#FFFFFF',
+      stroke: '#1F2937',
+      innerLine: '#4B5563',
+      shadow: '#E5E7EB',
+      accent: '#9CA3AF',
+    },
+    b: {
+      fill: '#262421',
+      stroke: '#111827',
+      innerLine: '#E5E7EB',
+      shadow: '#1F2937',
+      accent: '#D1D5DB',
+    },
+  },
+  staunton: {
+    w: {
+      fill: '#FFFDF7',
+      stroke: '#27272A',
+      innerLine: '#52525B',
+      shadow: '#E4E4E7',
+      accent: '#A1A1AA',
+    },
+    b: {
+      fill: '#18181B',
+      stroke: '#09090B',
+      innerLine: '#F4F4F5',
+      shadow: '#27272A',
+      accent: '#E4E4E7',
+    },
+  },
+  wood: {
+    w: {
+      fill: '#FDF6E2',
+      stroke: '#4A3319',
+      innerLine: '#78542A',
+      shadow: '#E6D3B1',
+      accent: '#A67C4A',
+    },
+    b: {
+      fill: '#3D2514',
+      stroke: '#1F120A',
+      innerLine: '#DEB887',
+      shadow: '#2B1A0E',
+      accent: '#D2A679',
+    },
+  },
+};
+
+// ==========================================
+// PAWN PIECE
+// ==========================================
+export const PawnPiece: React.FC<PieceProps> = ({
+  color,
+  className = 'w-full h-full',
+  set = 'neo',
+}) => {
   const isWhite = color === 'w';
+  const c = PIECE_THEME_COLORS[set][color];
+
   return (
-    <svg viewBox="0 0 45 45" className={className} xmlns="http://www.w3.org/2000/svg">
+    <svg
+      viewBox="0 0 45 45"
+      className={`${className} filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]`}
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <g
-        fill="none"
-        fillRule="evenodd"
-        stroke="#000"
+        fill={c.fill}
+        stroke={c.stroke}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
+        {/* Base Plinth */}
+        <path d="M 11 39 C 11 36.5 13 36 15 36 L 30 36 C 32 36 34 36.5 34 39 C 34 40.5 32 41 29 41 L 16 41 C 13 41 11 40.5 11 39 Z" />
+
+        {/* Stem Collar & Body */}
+        <path d="M 15 36 C 16 29 17 25 17 22 L 28 22 C 28 25 29 29 30 36 Z" />
+
+        {/* Torus Collar Ring */}
+        <path d="M 15 22 C 15 20.8 17.5 19.5 22.5 19.5 C 27.5 19.5 30 20.8 30 22 Z" />
+
+        {/* Spherical Head */}
+        <circle cx="22.5" cy="12" r="6.5" />
+
+        {/* Interior Accent Sheen for White / Crisp Highlight Line for Black */}
+        {isWhite ? (
+          <>
+            <path
+              d="M 19 9.5 C 20.5 8.2 23 8.2 24.5 9"
+              fill="none"
+              stroke={c.innerLine}
+              strokeWidth="1.2"
+              opacity="0.7"
+            />
+            <path
+              d="M 15 38.5 L 30 38.5"
+              fill="none"
+              stroke={c.innerLine}
+              strokeWidth="0.8"
+              opacity="0.5"
+            />
+          </>
+        ) : (
+          <>
+            <path
+              d="M 19 10 C 20.5 9 22.5 9 24 9.5"
+              fill="none"
+              stroke={c.innerLine}
+              strokeWidth="1.2"
+              opacity="0.85"
+            />
+            <path
+              d="M 16 38 L 29 38"
+              fill="none"
+              stroke={c.innerLine}
+              strokeWidth="1"
+              opacity="0.85"
+            />
+            <path
+              d="M 17 22 L 28 22"
+              fill="none"
+              stroke={c.innerLine}
+              strokeWidth="0.9"
+              opacity="0.8"
+            />
+          </>
+        )}
+      </g>
+    </svg>
+  );
+};
+
+// ==========================================
+// KNIGHT PIECE (The defining tournament piece!)
+// ==========================================
+export const KnightPiece: React.FC<PieceProps> = ({
+  color,
+  className = 'w-full h-full',
+  set = 'neo',
+}) => {
+  const isWhite = color === 'w';
+  const c = PIECE_THEME_COLORS[set][color];
+
+  return (
+    <svg
+      viewBox="0 0 45 45"
+      className={`${className} filter drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.38)]`}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <g
+        fill={c.fill}
+        stroke={c.stroke}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {/* Base */}
+        <path d="M 11 39 C 11 36.5 13.5 36 16.5 36 L 29.5 36 C 32.5 36 35 36.5 35 39 C 35 40.5 33 41 30.5 41 L 15.5 41 C 13 41 11 40.5 11 39 Z" />
+
+        {/* Sculpted Stallion Silhouette */}
+        <path d="M 14 36 C 14.5 32 15.8 28 17.5 25.5 C 15 24.5 12.5 21 12 17.5 C 11.5 14 13 12.5 14.5 12.5 C 15.2 12.5 15.8 13.2 16.2 14.2 C 17.5 11.5 20.2 9 24 8.5 C 25.2 7 27.5 6 29 6.5 C 29.5 7 29.2 8.5 28.5 9.8 C 31.2 10.5 33.5 12.5 34.5 15.5 C 35.5 18.5 34.8 22.2 32.5 25 C 30.8 27.5 32.5 31.5 33.5 36 Z" />
+
+        {/* Snout & Muzzle fold */}
         <path
-          d="M22.5 11.63V6M20 8h5"
-          stroke={isWhite ? '#1e293b' : '#f8fafc'}
-          strokeLinejoin="miter"
+          d="M 12 17.5 C 13 18.5 15 19 17.5 18.5 C 18.5 18.5 19 17.5 18.2 16.5 C 17.5 15.5 16 15 14.5 14.5"
+          fill={c.fill}
+        />
+
+        {/* Eye */}
+        <circle cx="21" cy="13.5" r="1.5" fill={isWhite ? c.stroke : c.innerLine} stroke="none" />
+
+        {/* Nostril */}
+        <circle cx="13.8" cy="17.8" r="0.8" fill={isWhite ? c.stroke : c.innerLine} stroke="none" />
+
+        {/* Mane Tuft Accents */}
+        <path
+          d="M 26 11.5 C 27.8 13.5 27.5 16 26.5 17.5"
+          fill="none"
+          stroke={isWhite ? c.innerLine : c.innerLine}
+          strokeWidth="1.3"
+          opacity={isWhite ? 0.75 : 0.9}
         />
         <path
-          d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5"
-          fill={isWhite ? '#ffffff' : '#1e293b'}
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
+          d="M 29.5 15.5 C 31 18 30.5 21 29.2 22.8"
+          fill="none"
+          stroke={isWhite ? c.innerLine : c.innerLine}
+          strokeWidth="1.3"
+          opacity={isWhite ? 0.75 : 0.9}
         />
         <path
-          d="M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V23v.5C19 16 9.5 13 5.5 19.5c-3 6 5 10.5 6 10.5v7z"
-          fill={isWhite ? '#ffffff' : '#1e293b'}
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
+          d="M 18.5 28 C 17.5 31 17 34 16.5 36"
+          fill="none"
+          stroke={isWhite ? c.innerLine : c.innerLine}
+          strokeWidth="1.1"
+          opacity={isWhite ? 0.5 : 0.8}
         />
         <path
-          d="M11.5 30c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0"
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
+          d="M 15 38.5 L 31 38.5"
+          fill="none"
+          stroke={isWhite ? c.innerLine : c.innerLine}
+          strokeWidth="0.9"
+          opacity={isWhite ? 0.45 : 0.85}
         />
       </g>
     </svg>
   );
 };
 
-export const QueenPiece: React.FC<PieceProps> = ({ color, className = 'w-full h-full' }) => {
+// ==========================================
+// BISHOP PIECE
+// ==========================================
+export const BishopPiece: React.FC<PieceProps> = ({
+  color,
+  className = 'w-full h-full',
+  set = 'neo',
+}) => {
   const isWhite = color === 'w';
+  const c = PIECE_THEME_COLORS[set][color];
+
   return (
-    <svg viewBox="0 0 45 45" className={className} xmlns="http://www.w3.org/2000/svg">
+    <svg
+      viewBox="0 0 45 45"
+      className={`${className} filter drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]`}
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <g
-        fill="none"
-        fillRule="evenodd"
-        stroke="#000"
+        fill={c.fill}
+        stroke={c.stroke}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
+        {/* Base */}
+        <path d="M 11 39 C 11 36.5 13.5 36 16.5 36 L 28.5 36 C 31.5 36 34 36.5 34 39 C 34 40.5 32 41 29.5 41 L 15.5 41 C 13 41 11 40.5 11 39 Z" />
+
+        {/* Stem */}
+        <path d="M 15 36 C 16 31 17.5 27 18 24 L 27 24 C 27.5 27 29 31 30 36 Z" />
+
+        {/* Collar Ring */}
+        <path d="M 16 24 C 16 22.8 18.5 22 22.5 22 C 26.5 22 29 22.8 29 24 Z" />
+
+        {/* Mitre Head */}
+        <path d="M 16 22 C 14.2 18 15 13 18.5 9.5 C 20.5 7.5 22.5 6.5 22.5 6.5 C 22.5 6.5 24.5 7.5 26.5 9.5 C 30 13 30.8 18 29 22 Z" />
+
+        {/* Crosslet Orb on Mitre */}
+        <circle cx="22.5" cy="5.2" r="1.8" />
+
+        {/* Iconic Diagonal Mitre Slit */}
         <path
-          d="M8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm16.5-4.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM41 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM16 8.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm17 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"
-          fill={isWhite ? '#ffffff' : '#1e293b'}
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
+          d="M 20.5 11 L 25 15 M 24.5 11.5 L 19.8 17.5"
+          fill="none"
+          stroke={isWhite ? c.stroke : c.innerLine}
+          strokeWidth="1.4"
         />
+
+        {/* Base highlight */}
         <path
-          d="M9 26c8.5-1.5 21-1.5 27 0l2-12-7 11-6-14-2.5 14-2.5-14-6 14-7-11 2 12z"
-          fill={isWhite ? '#ffffff' : '#1e293b'}
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
-        />
-        <path
-          d="M9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1.5 2.5-1.5 2.5-1.5 1.5.5 2.5.5 2.5 6.5 1 16.5 1 23 0 0 0 2-1 .5-2.5 0 0 0-1.5-1.5-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z"
-          fill={isWhite ? '#ffffff' : '#1e293b'}
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
-        />
-        <path
-          d="M11 38.5a35 35 1 0 0 23 0"
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
-        />
-        <path
-          d="M11 29a35 35 1 0 1 23 0m-21.5 2.5h20m-21 3a35 35 1 0 0 22 0m-23 3a35 35 1 0 0 24 0"
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
+          d="M 15 38.5 L 30 38.5"
+          fill="none"
+          stroke={isWhite ? c.innerLine : c.innerLine}
+          strokeWidth="0.9"
+          opacity={isWhite ? 0.45 : 0.85}
         />
       </g>
     </svg>
   );
 };
 
-export const RookPiece: React.FC<PieceProps> = ({ color, className = 'w-full h-full' }) => {
+// ==========================================
+// ROOK PIECE (Castle)
+// ==========================================
+export const RookPiece: React.FC<PieceProps> = ({
+  color,
+  className = 'w-full h-full',
+  set = 'neo',
+}) => {
   const isWhite = color === 'w';
+  const c = PIECE_THEME_COLORS[set][color];
+
   return (
-    <svg viewBox="0 0 45 45" className={className} xmlns="http://www.w3.org/2000/svg">
+    <svg
+      viewBox="0 0 45 45"
+      className={`${className} filter drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]`}
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <g
-        fill="none"
-        fillRule="evenodd"
-        stroke="#000"
+        fill={c.fill}
+        stroke={c.stroke}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <path
-          d="M9 39h27v-3H9v3zm3-3v-1.5h21V36H12zm-1-1.5l1.5-3.5h20l1.5 3.5H11zM14 29v-13h17v13H14zm-3-13l2-3h20l2 3H11zM9 13v-3.5h4V12h3.5V9.5h4V12h4V9.5h4V12h3.5V9.5h4V13H9z"
-          fill={isWhite ? '#ffffff' : '#1e293b'}
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
-        />
-        <path
-          d="M14 16h17m-17 5h17m-17 5h17"
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
-        />
+        {/* Base */}
+        <path d="M 10 39 C 10 36.5 13 36 16 36 L 29 36 C 32 36 35 36.5 35 39 C 35 40.5 33 41 30.5 41 L 14.5 41 C 12 41 10 40.5 10 39 Z" />
+
+        {/* Sturdy Masonry Tower */}
+        <path d="M 14.5 36 C 15 28 15.5 22 16 16.5 L 29 16.5 C 29.5 22 30 28 30.5 36 Z" />
+
+        {/* Cornice Neck */}
+        <path d="M 13 16.5 L 32 16.5 L 32.5 13.5 L 12.5 13.5 Z" />
+
+        {/* 4 Crenels / 3 Battlements */}
+        <path d="M 12 13.5 L 12 8 L 16.5 8 L 16.5 11 L 20 11 L 20 8 L 25 8 L 25 11 L 28.5 11 L 28.5 8 L 33 8 L 33 13.5 Z" />
+
+        {/* Interior Detailing */}
+        {isWhite ? (
+          <>
+            <line
+              x1="17"
+              y1="23"
+              x2="28"
+              y2="23"
+              stroke={c.innerLine}
+              strokeWidth="0.8"
+              opacity="0.4"
+            />
+            <path
+              d="M 14.5 38.5 L 30.5 38.5"
+              fill="none"
+              stroke={c.innerLine}
+              strokeWidth="0.9"
+              opacity="0.5"
+            />
+          </>
+        ) : (
+          <>
+            <line
+              x1="16"
+              y1="16.5"
+              x2="29"
+              y2="16.5"
+              stroke={c.innerLine}
+              strokeWidth="1.1"
+              opacity="0.85"
+            />
+            <line
+              x1="17"
+              y1="25"
+              x2="28"
+              y2="25"
+              stroke={c.innerLine}
+              strokeWidth="0.9"
+              opacity="0.75"
+            />
+            <path
+              d="M 14 38.5 L 31 38.5"
+              fill="none"
+              stroke={c.innerLine}
+              strokeWidth="1"
+              opacity="0.85"
+            />
+          </>
+        )}
       </g>
     </svg>
   );
 };
 
-export const BishopPiece: React.FC<PieceProps> = ({ color, className = 'w-full h-full' }) => {
+// ==========================================
+// QUEEN PIECE
+// ==========================================
+export const QueenPiece: React.FC<PieceProps> = ({
+  color,
+  className = 'w-full h-full',
+  set = 'neo',
+}) => {
   const isWhite = color === 'w';
+  const c = PIECE_THEME_COLORS[set][color];
+
   return (
-    <svg viewBox="0 0 45 45" className={className} xmlns="http://www.w3.org/2000/svg">
+    <svg
+      viewBox="0 0 45 45"
+      className={`${className} filter drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.38)]`}
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <g
-        fill="none"
-        fillRule="evenodd"
-        stroke="#000"
+        fill={c.fill}
+        stroke={c.stroke}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <g
-          fill={isWhite ? '#ffffff' : '#1e293b'}
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
-        >
-          <path d="M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.35.49-2.32.47-3-.5 1.35-1.94 3-2 3-2z" />
-          <path d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z" />
-          <path d="M25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z" />
-        </g>
-        <path
-          d="M17.5 26h10M15 30h15m-7.5-14.5v5m-3-2.5h6"
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
-        />
+        {/* Base */}
+        <path d="M 10 39 C 10 36.5 13 36 16.5 36 L 28.5 36 C 32 36 35 36.5 35 39 C 35 40.5 33 41 31 41 L 14 41 C 12 41 10 40.5 10 39 Z" />
+
+        {/* Waisted Gown */}
+        <path d="M 14.5 36 C 16 30 17 26 17.5 22.5 L 27.5 22.5 C 28 26 29 30 30.5 36 Z" />
+
+        {/* Gown Ring */}
+        <path d="M 15 22.5 C 15 21.2 18 20.2 22.5 20.2 C 27 20.2 30 21.2 30 22.5 Z" />
+
+        {/* Flared 5-point Coronet Crown */}
+        <path d="M 14.5 20 C 13.5 16 11 12 9.5 10.5 L 16 16 L 22.5 8 L 29 16 L 35.5 10.5 C 34 12 31.5 16 30.5 20 Z" />
+
+        {/* 5 Coronet Crown Pearls */}
+        <circle cx="9.5" cy="9.5" r="1.6" />
+        <circle cx="16" cy="14.8" r="1.4" />
+        <circle cx="22.5" cy="7" r="1.8" />
+        <circle cx="29" cy="14.8" r="1.4" />
+        <circle cx="35.5" cy="9.5" r="1.6" />
+
+        {/* Interior Accent Sheen */}
+        {isWhite ? (
+          <path
+            d="M 14.5 38.5 L 30.5 38.5"
+            fill="none"
+            stroke={c.innerLine}
+            strokeWidth="0.9"
+            opacity="0.5"
+          />
+        ) : (
+          <>
+            <path
+              d="M 15.5 22.5 C 17.5 21.2 27.5 21.2 29.5 22.5"
+              fill="none"
+              stroke={c.innerLine}
+              strokeWidth="1"
+              opacity="0.85"
+            />
+            <path
+              d="M 14 38.5 L 31 38.5"
+              fill="none"
+              stroke={c.innerLine}
+              strokeWidth="1"
+              opacity="0.85"
+            />
+          </>
+        )}
       </g>
     </svg>
   );
 };
 
-export const KnightPiece: React.FC<PieceProps> = ({ color, className = 'w-full h-full' }) => {
+// ==========================================
+// KING PIECE
+// ==========================================
+export const KingPiece: React.FC<PieceProps> = ({
+  color,
+  className = 'w-full h-full',
+  set = 'neo',
+}) => {
   const isWhite = color === 'w';
+  const c = PIECE_THEME_COLORS[set][color];
+
   return (
-    <svg viewBox="0 0 45 45" className={className} xmlns="http://www.w3.org/2000/svg">
+    <svg
+      viewBox="0 0 45 45"
+      className={`${className} filter drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.38)]`}
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <g
-        fill="none"
-        fillRule="evenodd"
-        stroke="#000"
+        fill={c.fill}
+        stroke={c.stroke}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
+        {/* Base */}
+        <path d="M 10 39 C 10 36.5 13 36 16.5 36 L 28.5 36 C 32 36 35 36.5 35 39 C 35 40.5 33 41 31 41 L 14 41 C 12 41 10 40.5 10 39 Z" />
+
+        {/* Regal Body */}
+        <path d="M 14.5 36 C 15.8 30 17 26 17.5 22.5 L 27.5 22.5 C 28 26 29.2 30 30.5 36 Z" />
+
+        {/* Crown Tier Ring */}
+        <path d="M 14 22.5 C 14 21 17.5 19.5 22.5 19.5 C 27.5 19.5 31 21 31 22.5 Z" />
+
+        {/* Majestic Crown Dome with Arches */}
+        <path d="M 14 19.5 C 12 16 13 12 16 9.5 C 18.5 11 20 12.5 22.5 12.5 C 25 12.5 26.5 11 29 9.5 C 32 12 33 16 31 19.5 Z" />
+
+        {/* Sovereign Latin Cross */}
         <path
-          d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21"
-          fill={isWhite ? '#ffffff' : '#1e293b'}
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
+          d="M 22.5 3.5 L 22.5 9 M 19.5 6 L 25.5 6"
+          stroke={c.stroke}
+          strokeWidth="1.8"
+          strokeLinecap="square"
         />
-        <path
-          d="M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.042-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4.003 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-.994-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-1.992 2.5-3c1 0 1 3 1 3"
-          fill={isWhite ? '#ffffff' : '#1e293b'}
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
-        />
-        <path
-          d="M9.5 25.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0zm5.5-11.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0z"
-          fill={isWhite ? '#1e293b' : '#cbd5e1'}
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
-        />
-        <path
-          d="M15 15.5c.5.5 1 1 2 1s2.5-.5 3-1.5"
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
-        />
+
+        {/* Cross Accent Details */}
+        {isWhite ? (
+          <path
+            d="M 14.5 38.5 L 30.5 38.5"
+            fill="none"
+            stroke={c.innerLine}
+            strokeWidth="0.9"
+            opacity="0.5"
+          />
+        ) : (
+          <>
+            <path
+              d="M 15 22.5 C 18 20.8 27 20.8 30 22.5"
+              fill="none"
+              stroke={c.innerLine}
+              strokeWidth="1.1"
+              opacity="0.85"
+            />
+            <circle cx="22.5" cy="16" r="1.3" fill={c.innerLine} stroke="none" />
+            <path
+              d="M 14 38.5 L 31 38.5"
+              fill="none"
+              stroke={c.innerLine}
+              strokeWidth="1"
+              opacity="0.85"
+            />
+          </>
+        )}
       </g>
     </svg>
   );
 };
 
-export const PawnPiece: React.FC<PieceProps> = ({ color, className = 'w-full h-full' }) => {
-  const isWhite = color === 'w';
-  return (
-    <svg viewBox="0 0 45 45" className={className} xmlns="http://www.w3.org/2000/svg">
-      <g
-        fill="none"
-        fillRule="evenodd"
-        stroke="#000"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path
-          d="M22.5 9a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7zm0 10.5c-4 0-6.5 3.5-7 8.5h14c-.5-5-3-8.5-7-8.5zm-8 12.5c2 2 14 2 16 0v2H14.5v-2zm-2.5 4c3.5 1 17.5 1 21 0v2H12v-2z"
-          fill={isWhite ? '#ffffff' : '#1e293b'}
-          stroke={isWhite ? '#1e293b' : '#cbd5e1'}
-        />
-      </g>
-    </svg>
-  );
-};
-
+// ==========================================
+// UNIFIED CHESS PIECE COMPONENT
+// ==========================================
 export const ChessPieceIcon: React.FC<{
-  type: 'p' | 'n' | 'b' | 'r' | 'q' | 'k';
+  type: PieceType;
   color: 'w' | 'b';
   className?: string;
-}> = ({ type, color, className = 'w-full h-full' }) => {
+  set?: PieceSet;
+}> = ({ type, color, className = 'w-full h-full', set = 'neo' }) => {
   switch (type.toLowerCase()) {
-    case 'k':
-      return <KingPiece color={color} className={className} />;
-    case 'q':
-      return <QueenPiece color={color} className={className} />;
-    case 'r':
-      return <RookPiece color={color} className={className} />;
-    case 'b':
-      return <BishopPiece color={color} className={className} />;
-    case 'n':
-      return <KnightPiece color={color} className={className} />;
     case 'p':
+      return <PawnPiece color={color} className={className} set={set} />;
+    case 'n':
+      return <KnightPiece color={color} className={className} set={set} />;
+    case 'b':
+      return <BishopPiece color={color} className={className} set={set} />;
+    case 'r':
+      return <RookPiece color={color} className={className} set={set} />;
+    case 'q':
+      return <QueenPiece color={color} className={className} set={set} />;
+    case 'k':
+      return <KingPiece color={color} className={className} set={set} />;
     default:
-      return <PawnPiece color={color} className={className} />;
+      return null;
   }
 };

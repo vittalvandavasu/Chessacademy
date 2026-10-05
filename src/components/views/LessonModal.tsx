@@ -228,7 +228,8 @@ export const LessonModal: React.FC<LessonModalProps> = ({
                   fen={currentSection.demonstrationFen}
                   arrowGuide={currentSection.demonstrationArrows || []}
                   interactive={false}
-                  className="shadow-xl"
+                  showToolbar={true}
+                  className="w-full max-w-[420px] shadow-2xl"
                 />
                 <div className="text-center mt-2 text-xs text-slate-400 font-mono-nums">
                   Interactive Diagram & Key Lines

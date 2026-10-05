@@ -1,6 +1,7 @@
 import { startTestServer, TestServerContext } from './testHelper';
 import { prisma } from '../../server/db/prisma';
 import { AuthService } from '../../server/services/authService';
+import { Chess } from 'chess.js';
 
 let serverCtx: TestServerContext;
 let passed = 0;
@@ -77,13 +78,16 @@ export async function runDataIsolationTests() {
 
     // TEST 3: User B cannot submit attempts on behalf of User A by passing userId in body
     const exercise = await prisma.exercise.findFirst({ where: { status: 'VERIFIED' } });
+    const targetMove = JSON.parse(exercise!.targetMoves)[0];
+    const sim = new Chess(exercise!.fen);
+    const moveObj = sim.move(targetMove);
     const attemptRes = await serverCtx.request(
       `/exercises/${exercise!.id}/attempt`,
       {
         method: 'POST',
         body: JSON.stringify({
-          from: 'e2',
-          to: 'e4',
+          from: moveObj!.from,
+          to: moveObj!.to,
           userId: userAId, // Attempted impersonation
         }),
       },

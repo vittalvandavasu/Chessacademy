@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navbar, NavTab } from './components/layout/Navbar';
 import { HomeDashboard } from './components/views/HomeDashboard';
 import { LearnView } from './components/views/LearnView';
+import { OpeningsView } from './components/views/OpeningsView';
 import { PracticeView } from './components/views/PracticeView';
 import { PuzzlesView } from './components/views/PuzzlesView';
 import { ProgressView } from './components/views/ProgressView';
@@ -11,6 +12,7 @@ import { LessonModal } from './components/views/LessonModal';
 import { OnboardingModal } from './components/views/OnboardingModal';
 import { ProfileModal } from './components/profile/ProfileModal';
 import { AuthModal } from './components/auth/AuthModal';
+import { QuickCommandPalette } from './components/navigation/QuickCommandPalette';
 import { StorageService, UserProfile } from './services/storageService';
 import { UserStats, ConceptMastery, DailyPracticeSession, Achievement, Lesson } from './types/chess';
 import { AdaptiveLearningEngine } from './services/adaptiveLearningEngine';
@@ -28,6 +30,9 @@ export default function App() {
   const [completedLessons, setCompletedLessons] = useState<string[]>(() =>
     StorageService.getCompletedLessons()
   );
+  const [completedOpenings, setCompletedOpenings] = useState<string[]>(() =>
+    StorageService.getCompletedOpenings()
+  );
   const [dailyPractice, setDailyPractice] = useState<DailyPracticeSession>(() =>
     StorageService.getDailyPractice()
   );
@@ -40,6 +45,8 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => !StorageService.isOnboardingCompleted());
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [selectedOpeningIdForModal, setSelectedOpeningIdForModal] = useState<string | null>(null);
   const [practiceConceptFilter, setPracticeConceptFilter] = useState<string | null>(null);
 
   // Sync with backend on mount
@@ -163,6 +170,13 @@ export default function App() {
       StorageService.completeLesson(lessonId, xpReward);
     }
     setCompletedLessons(StorageService.getCompletedLessons());
+    setStats(StorageService.getStats());
+  };
+
+  // Handle opening completion
+  const handleCompleteOpening = (openingId: string, xpReward: number) => {
+    StorageService.completeOpening(openingId, xpReward);
+    setCompletedOpenings(StorageService.getCompletedOpenings());
     setStats(StorageService.getStats());
   };
 
@@ -328,6 +342,7 @@ export default function App() {
         onOpenProfile={() => setShowProfileModal(true)}
         onOpenAuth={() => setShowAuthModal(true)}
         onResetDemo={handleResetDemo}
+        onOpenSearch={() => setShowCommandPalette(true)}
       />
 
       {/* Main View Router */}
@@ -350,6 +365,15 @@ export default function App() {
           <LearnView
             completedLessons={completedLessons}
             onCompleteLesson={handleCompleteLesson}
+            onNavigateToOpenings={() => setActiveTab('openings')}
+          />
+        )}
+
+        {activeTab === 'openings' && (
+          <OpeningsView
+            completedOpenings={completedOpenings}
+            onCompleteOpening={handleCompleteOpening}
+            initialOpeningId={selectedOpeningIdForModal}
           />
         )}
 
@@ -448,20 +472,35 @@ export default function App() {
         />
       )}
 
+      {/* Quick Navigation Command Palette (⌘K) */}
+      <QuickCommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        onNavigateTab={(tab) => {
+          setActiveTab(tab);
+          if (tab !== 'practice') setPracticeConceptFilter(null);
+        }}
+        onSelectOpening={(openingId) => {
+          setSelectedOpeningIdForModal(openingId);
+          setActiveTab('openings');
+        }}
+        onSelectLesson={handleContinueLearning}
+      />
+
       {/* Clean Educational Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-8 px-4 text-xs text-slate-500">
+      <footer className="border-t border-slate-900/80 bg-slate-950 py-8 px-4 text-xs text-slate-500">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-300 font-display">ChessCadet</span>
             <span aria-hidden="true">·</span>
-            <span>Interactive Adaptive Chess Academy</span>
+            <span>Mastery Academy</span>
+            <span aria-hidden="true">·</span>
+            <span>20 Verified Opening Repertoires</span>
           </div>
-          <div className="flex items-center gap-4 text-slate-400">
-            <span>Server-Authoritative Evaluation</span>
+          <div className="flex items-center gap-4 text-slate-500 text-[11px]">
+            <span>Interactive Deliberate Practice</span>
             <span aria-hidden="true">·</span>
-            <span>Role: <strong className="text-emerald-400">{user.role || 'STUDENT'}</strong></span>
-            <span aria-hidden="true">·</span>
-            <span>User: {user.name}</span>
+            <span>Signed in as <strong className="text-slate-300 font-medium">{user.name}</strong></span>
           </div>
         </div>
       </footer>

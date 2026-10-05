@@ -30,8 +30,13 @@ import {
   BookOpen,
   Eye,
   Sliders,
-  ChevronDown,
-  ChevronUp,
+  Target,
+  Brain,
+  Award,
+  Check,
+  Compass,
+  ChevronRight,
+  BookmarkCheck,
 } from 'lucide-react';
 
 interface ExerciseEngineProps {
@@ -49,6 +54,8 @@ interface ExerciseEngineProps {
   showNextButton?: boolean;
 }
 
+type CoachPhase = 'observe' | 'candidates' | 'execute' | 'masterclass';
+
 export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
   exercise,
   onSolve,
@@ -60,6 +67,7 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
   const [status, setStatus] = useState<'idle' | 'evaluating' | 'correct' | 'incorrect'>('idle');
   const [feedbackMessage, setFeedbackMessage] = useState<string>('');
   const [diagnosticCategory, setDiagnosticCategory] = useState<string>('');
+  const [moveVerdict, setMoveVerdict] = useState<string>('');
   const [hintTier, setHintTier] = useState<number>(0); // 0 = none, 1 = concept, 2 = area, 3 = piece, 4 = move
   const [attempts, setAttempts] = useState(0);
   const [startTime, setStartTime] = useState<number>(Date.now());
@@ -70,11 +78,18 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
     exercise.initialOrientation || 'white'
   );
   const [soundOn, setSoundOn] = useState<boolean>(isSoundEnabled());
-  const [showObservation, setShowObservation] = useState<boolean>(true);
   const [showConceptModal, setShowConceptModal] = useState<boolean>(false);
   const [isAnalysisMode, setIsAnalysisMode] = useState<boolean>(false);
   const [lastPlayedSan, setLastPlayedSan] = useState<string>('');
-  const [showDetailedBreakdown, setShowDetailedBreakdown] = useState<boolean>(false);
+
+  // Coach Thinking Process Stage
+  const [coachPhase, setCoachPhase] = useState<CoachPhase>(
+    exercise.observationPrompt || exercise.learningObjective ? 'observe' : 'execute'
+  );
+
+  // Review Quiz State
+  const [selectedQuizIndex, setSelectedQuizIndex] = useState<number | null>(null);
+  const [isQuizSubmitted, setIsQuizSubmitted] = useState<boolean>(false);
 
   const isComputerMoving = useRef(false);
 
@@ -94,7 +109,11 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
     setOrientation(exercise.initialOrientation || 'white');
     setIsAnalysisMode(false);
     setLastPlayedSan('');
-    setShowDetailedBreakdown(false);
+    setSelectedQuizIndex(null);
+    setIsQuizSubmitted(false);
+    setCoachPhase(
+      exercise.observationPrompt || exercise.learningObjective ? 'observe' : 'execute'
+    );
     isComputerMoving.current = false;
   }, [exercise]);
 
@@ -103,16 +122,21 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
     const nextTier = Math.min(4, hintTier + 1);
     setHintTier(nextTier);
 
+    const cHint = exercise.hints?.conceptHint || exercise.conceptHint;
+    const aHint = exercise.hints?.areaHint || exercise.areaHint;
+    const pHint = exercise.hints?.pieceHint || exercise.pieceHint;
+    const mHint = exercise.hints?.moveHint || exercise.moveHint;
+
     if (nextTier === 1) {
-      setFeedbackMessage(exercise.conceptHint);
+      setFeedbackMessage(cHint);
     } else if (nextTier === 2) {
-      setFeedbackMessage(`${exercise.conceptHint} Target area: ${exercise.areaHint}`);
+      setFeedbackMessage(`${cHint} Target area: ${aHint}`);
     } else if (nextTier === 3) {
-      setFeedbackMessage(`Piece hint: ${exercise.pieceHint}.`);
+      setFeedbackMessage(`Piece hint: ${pHint}.`);
     } else if (nextTier === 4) {
-      setFeedbackMessage(`Winning move: ${exercise.moveHint}`);
+      setFeedbackMessage(`Winning move: ${mHint}`);
       // Show directional arrow
-      const target = exercise.targetMoves[0];
+      const target = exercise.solution || exercise.targetMoves[0];
       if (target && target.length >= 4) {
         const from = target.slice(0, 2);
         const to = target.slice(2, 4);
@@ -143,6 +167,11 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
 
   const handleUserMove = async (moveInfo: { from: Square; to: Square; san: string; fen: string }) => {
     if (status === 'correct' || isComputerMoving.current) return;
+
+    // Automatically transition to 'execute' phase when a move is attempted
+    if (coachPhase !== 'execute') {
+      setCoachPhase('execute');
+    }
 
     setAttempts((prev) => prev + 1);
     setStatus('evaluating');
@@ -177,6 +206,7 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
       }
 
       if (serverResult.isSuccess) {
+        setMoveVerdict(serverResult.verdict || 'TACTICAL_WIN');
         if (serverResult.opponentReplySan && !serverResult.isSequenceComplete) {
           // Multi-step continuation: Computer responds
           isComputerMoving.current = true;
@@ -196,11 +226,11 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
           setCurrentFen(moveInfo.fen);
           setStatus('correct');
           setFeedbackMessage(serverResult.explanation || exercise.explanation);
-          setShowDetailedBreakdown(true);
+          setCoachPhase('masterclass');
           playSuccessSound();
           confetti({
-            particleCount: 55,
-            spread: 65,
+            particleCount: 60,
+            spread: 70,
             origin: { y: 0.7 },
           });
 
@@ -221,10 +251,13 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
         // Move was legal but tactically incorrect
         playErrorSound();
         setStatus('incorrect');
+        setMoveVerdict(serverResult.verdict || 'MISCALCULATION');
 
         // Diagnose mistake category
         let diagCat = 'Tactical Oversight';
-        if (moveInfo.san.includes('+')) diagCat = 'Premature Check';
+        if (serverResult.verdict === 'HANGING_PIECE') diagCat = 'Hanging Piece';
+        else if (serverResult.verdict === 'PREMATURE_CHECK') diagCat = 'Premature Check';
+        else if (moveInfo.san.includes('+')) diagCat = 'Premature Check';
         else if (moveInfo.san.includes('x')) diagCat = 'Dubious Capture';
         else if (exercise.alternatives?.some((a) => a.san === cleanSan || a.san === moveInfo.san)) {
           const matchedAlt = exercise.alternatives.find(
@@ -286,7 +319,7 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
           setCurrentFen(moveInfo.fen);
           setStatus('correct');
           setFeedbackMessage(exercise.explanation);
-          setShowDetailedBreakdown(true);
+          setCoachPhase('masterclass');
           playSuccessSound();
           confetti({
             particleCount: 50,
@@ -312,7 +345,7 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
         setFeedbackMessage(
           customMistake ||
             `Not quite. You played ${moveInfo.san}. ${
-              hintTier >= 1 ? exercise.conceptHint : 'Examine piece safety and try again.'
+              hintTier >= 1 ? (exercise.hints?.conceptHint || exercise.conceptHint) : 'Examine piece safety and try again.'
             }`
         );
         setTimeout(() => {
@@ -322,6 +355,23 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
         }, 1400);
       }
     }
+  };
+
+  const handleSelectQuizOption = (index: number) => {
+    if (isQuizSubmitted) return;
+    setSelectedQuizIndex(index);
+    setIsQuizSubmitted(true);
+    if (exercise.reviewQuestion && index === exercise.reviewQuestion.correctIndex) {
+      playSuccessSound();
+      confetti({ particleCount: 35, spread: 50, origin: { y: 0.8 } });
+    } else {
+      playErrorSound();
+    }
+  };
+
+  const handleResetQuiz = () => {
+    setSelectedQuizIndex(null);
+    setIsQuizSubmitted(false);
   };
 
   // Switch to Full Analysis Mode
@@ -344,6 +394,10 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
   }
 
   const turnColorName = (exercise.initialOrientation || 'white') === 'black' ? 'Black' : 'White';
+  const effectiveObjective = exercise.learningObjective || exercise.objective;
+  const effectiveTacticalExpl = exercise.tacticalExplanation || exercise.explanation;
+  const effectiveCalcExpl = exercise.calculationExplanation || exercise.consequence;
+  const effectivePrinciple = exercise.transferablePrinciple || exercise.principleToRemember;
 
   return (
     <div className="flex flex-col lg:flex-row items-start justify-center gap-6 w-full max-w-6xl mx-auto p-1 sm:p-2">
@@ -395,6 +449,7 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
           onMove={handleUserMove}
           highlightSquares={highlightSquares}
           arrowGuide={activeArrows}
+          showToolbar={true}
           className="shadow-2xl"
         />
 
@@ -416,8 +471,8 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
         </div>
       </div>
 
-      {/* Exercise Control & Pedagogical Deck */}
-      <div className="flex-1 w-full bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col justify-between min-h-0 lg:min-h-[490px] shadow-xl">
+      {/* Codecademy for Chess: Masterclass Pedagogical Deck */}
+      <div className="flex-1 w-full bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col justify-between min-h-0 lg:min-h-[510px] shadow-xl">
         <div className="space-y-4">
           {/* Top Category & Hierarchy Header */}
           <div className="border-b border-slate-800 pb-3">
@@ -425,138 +480,442 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
               <span className="uppercase tracking-wider font-semibold text-emerald-400">
                 {exercise.type.replace(/_/g, ' ')}
               </span>
-              <span className="text-slate-500">
-                {exercise.lessonTitle || 'Interactive Mastery Exercise'}
+              <span className="text-slate-500 font-medium">
+                {exercise.lessonTitle || exercise.title || 'Interactive Masterclass Lesson'}
               </span>
             </div>
 
             <h3 className="text-xl sm:text-2xl font-bold text-slate-100 font-display">
-              {exercise.concept.replace(/_/g, ' ')}
+              {exercise.title || `${exercise.concept.replace(/_/g, ' ')} Masterclass`}
             </h3>
 
-            {exercise.objective && (
-              <p className="text-xs text-slate-400 mt-1 font-medium">
-                Goal: <span className="text-slate-300">{exercise.objective}</span>
-              </p>
+            {effectiveObjective && (
+              <div className="flex items-start gap-2 text-xs text-slate-300 mt-1.5 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/80">
+                <Target className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <p>
+                  <span className="font-semibold text-emerald-400 uppercase text-[10px] tracking-wide block">
+                    Learning Objective
+                  </span>
+                  {effectiveObjective}
+                </p>
+              </div>
             )}
           </div>
 
-          {/* "What Should You Notice?" Observation Prompt (Before Move) */}
-          {status !== 'correct' && exercise.observationPrompt && (
-            <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3.5 transition-all">
-              <div
-                className="flex items-center justify-between cursor-pointer"
-                onClick={() => setShowObservation(!showObservation)}
-              >
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-300">
-                  <Eye className="w-4 h-4 text-emerald-400" />
-                  <span>What Should You Notice?</span>
-                </div>
-                <button className="text-slate-400 hover:text-slate-200">
-                  {showObservation ? (
-                    <ChevronUp className="w-4 h-4" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-
-              {showObservation && (
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mt-2 pt-2 border-t border-slate-800/60">
-                  {exercise.observationPrompt}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Feedback & Result Box */}
-          {feedbackMessage && (
-            <div
-              className={`p-4 rounded-xl text-sm leading-relaxed transition-all shadow-md ${
-                status === 'correct'
-                  ? 'bg-emerald-950/60 border border-emerald-500/40 text-emerald-100'
-                  : status === 'incorrect'
-                  ? 'bg-red-950/50 border border-red-500/30 text-red-200'
-                  : 'bg-slate-800/80 border border-slate-700 text-slate-200'
+          {/* Coach Thinking Stepper Ribbon (Codecademy for Chess) */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-950/80 border border-slate-800 rounded-xl text-xs overflow-x-auto">
+            <button
+              onClick={() => setCoachPhase('observe')}
+              className={`flex-1 min-w-[90px] py-1.5 px-2 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 ${
+                coachPhase === 'observe'
+                  ? 'bg-slate-800 text-emerald-300 shadow-xs border border-emerald-500/30'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <div className="flex items-start gap-3">
-                {status === 'correct' ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                ) : status === 'incorrect' ? (
-                  <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                ) : (
-                  <Lightbulb className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                )}
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-sm block">
-                      {status === 'correct'
-                        ? 'Decisive Tactical Move!'
-                        : status === 'incorrect'
-                        ? `Not Quite: ${diagnosticCategory || 'Tactical Oversight'}`
-                        : hintTier > 0
-                        ? `Hint Level ${hintTier} of 4`
-                        : 'Coach Note'}
-                    </span>
-                    {status === 'incorrect' && lastPlayedSan && (
-                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-red-900/60 text-red-300 font-semibold">
-                        Played: {lastPlayedSan}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs sm:text-sm leading-relaxed">{feedbackMessage}</p>
-                </div>
-              </div>
-            </div>
-          )}
+              <Eye className="w-3.5 h-3.5 text-emerald-400" />
+              <span>1. Observe</span>
+            </button>
 
-          {/* Multi-Tier Solved Feedback (Consequence + Principle) */}
-          {status === 'correct' && (
-            <div className="space-y-3 animate-in fade-in duration-300">
-              {/* Level 3: Consequence */}
-              {exercise.consequence && (
-                <div className="p-3.5 bg-slate-950/50 border border-slate-800 rounded-xl text-xs sm:text-sm">
-                  <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider block mb-1">
-                    Tactical Follow-up (Consequence)
+            <button
+              onClick={() => setCoachPhase('candidates')}
+              className={`flex-1 min-w-[90px] py-1.5 px-2 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 ${
+                coachPhase === 'candidates'
+                  ? 'bg-slate-800 text-emerald-300 shadow-xs border border-emerald-500/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Brain className="w-3.5 h-3.5 text-amber-400" />
+              <span>2. Plan</span>
+            </button>
+
+            <button
+              onClick={() => setCoachPhase('execute')}
+              className={`flex-1 min-w-[90px] py-1.5 px-2 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 ${
+                coachPhase === 'execute'
+                  ? 'bg-slate-800 text-emerald-300 shadow-xs border border-emerald-500/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5 text-emerald-400" />
+              <span>3. Calculate</span>
+            </button>
+
+            <button
+              onClick={() => setCoachPhase('masterclass')}
+              className={`flex-1 min-w-[100px] py-1.5 px-2 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 ${
+                coachPhase === 'masterclass'
+                  ? 'bg-emerald-950/80 text-emerald-200 border border-emerald-500/40'
+                  : status === 'correct'
+                  ? 'text-emerald-400 hover:text-emerald-300'
+                  : 'text-slate-500 hover:text-slate-400'
+              }`}
+            >
+              <Award className="w-3.5 h-3.5 text-amber-400" />
+              <span>4. Masterclass</span>
+              {status === 'correct' && (
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              )}
+            </button>
+          </div>
+
+          {/* PHASE 1: OBSERVE & CONTEXT */}
+          {coachPhase === 'observe' && (
+            <div className="space-y-3.5 animate-in fade-in duration-200">
+              {exercise.positionContext && (
+                <div className="p-3 bg-slate-950/50 border border-slate-800 rounded-xl text-xs sm:text-sm">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                    Position Context
                   </span>
-                  <p className="text-slate-300 leading-relaxed font-mono">
-                    {exercise.consequence}
+                  <p className="text-slate-300 leading-relaxed">
+                    {exercise.positionContext}
                   </p>
                 </div>
               )}
 
-              {/* Level 4: Principle to remember */}
-              {exercise.principleToRemember && (
-                <div className="p-3.5 bg-gradient-to-r from-emerald-950/30 to-slate-900 border border-emerald-500/30 rounded-xl text-xs sm:text-sm flex items-start gap-2.5">
-                  <Lightbulb className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              {exercise.observationPrompt && (
+                <div className="p-3.5 bg-emerald-950/30 border border-emerald-500/30 rounded-xl text-xs sm:text-sm flex items-start gap-3">
+                  <Eye className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                   <div>
-                    <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block mb-0.5">
-                      Pattern To Remember
+                    <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
+                      What Should You Notice?
                     </span>
                     <p className="text-slate-200 leading-relaxed">
-                      {exercise.principleToRemember}
+                      {exercise.observationPrompt}
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* Why This Move Quick Summary */}
-              {exercise.whyThisMove && (
-                <div className="p-3.5 bg-slate-800/40 border border-slate-700/60 rounded-xl text-xs">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
-                    Structured Idea
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-xs text-slate-400">
+                  Tip: Look for unprotected pieces and king sightlines.
+                </span>
+                <button
+                  onClick={() => setCoachPhase('candidates')}
+                  className="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+                >
+                  <span>Form a Plan & Candidates</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* PHASE 2: PLAN & GENERATE CANDIDATES */}
+          {coachPhase === 'candidates' && (
+            <div className="space-y-3.5 animate-in fade-in duration-200">
+              {exercise.thinkingPrompt && (
+                <div className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl text-xs sm:text-sm flex items-start gap-3">
+                  <Brain className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block mb-1">
+                      Grandmaster Thinking Process
+                    </span>
+                    <p className="text-slate-200 leading-relaxed">
+                      {exercise.thinkingPrompt}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {exercise.candidateMovePrompt && (
+                <div className="p-3 bg-slate-950/40 border border-slate-800 rounded-xl text-xs sm:text-sm">
+                  <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider block mb-1">
+                    Candidate Moves to Calculate
                   </span>
-                  <div className="grid grid-cols-2 gap-2 text-slate-300">
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">Idea:</span>
-                      <span className="font-semibold text-slate-200">{exercise.whyThisMove.tacticalIdea}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">Target:</span>
-                      <span className="font-semibold text-slate-200">{exercise.whyThisMove.target}</span>
+                  <p className="text-slate-300 leading-relaxed">
+                    {exercise.candidateMovePrompt}
+                  </p>
+                </div>
+              )}
+
+              <div className="p-3 bg-slate-800/30 border border-slate-700/50 rounded-xl text-xs text-slate-300">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Forcing Moves Checklist
+                </span>
+                <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                  <div className="p-1.5 bg-slate-900 rounded-md border border-slate-800">
+                    <span className="text-emerald-400 font-bold block">1. Checks</span>
+                    <span className="text-slate-400 text-[10px]">Does any move give check?</span>
+                  </div>
+                  <div className="p-1.5 bg-slate-900 rounded-md border border-slate-800">
+                    <span className="text-amber-400 font-bold block">2. Captures</span>
+                    <span className="text-slate-400 text-[10px]">Are any pieces undefended?</span>
+                  </div>
+                  <div className="p-1.5 bg-slate-900 rounded-md border border-slate-800">
+                    <span className="text-blue-400 font-bold block">3. Threats</span>
+                    <span className="text-slate-400 text-[10px]">Can we fork or pin?</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  onClick={() => setCoachPhase('observe')}
+                  className="text-xs text-slate-400 hover:text-slate-200"
+                >
+                  ← Back to Observation
+                </button>
+                <button
+                  onClick={() => setCoachPhase('execute')}
+                  className="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+                >
+                  <span>Ready: Make Move on Board</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* PHASE 3: CALCULATE & EXECUTE */}
+          {coachPhase === 'execute' && (
+            <div className="space-y-3.5 animate-in fade-in duration-200">
+              {/* Feedback & Result Box */}
+              {feedbackMessage ? (
+                <div
+                  className={`p-4 rounded-xl text-sm leading-relaxed transition-all shadow-md ${
+                    status === 'correct'
+                      ? 'bg-emerald-950/60 border border-emerald-500/40 text-emerald-100'
+                      : status === 'incorrect'
+                      ? 'bg-red-950/50 border border-red-500/30 text-red-200'
+                      : 'bg-slate-800/80 border border-slate-700 text-slate-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    {status === 'correct' ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                    ) : status === 'incorrect' ? (
+                      <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <Lightbulb className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-sm block">
+                          {status === 'correct'
+                            ? moveVerdict === 'CHECKMATE'
+                              ? 'Checkmate Delivered!'
+                              : moveVerdict === 'DECISIVE_FORK'
+                              ? 'Winning Fork Executed!'
+                              : moveVerdict === 'DECISIVE_PIN'
+                              ? 'Winning Pin Executed!'
+                              : moveVerdict === 'DECISIVE_SKEWER'
+                              ? 'Winning Skewer Executed!'
+                              : 'Tactical Move Verified!'
+                            : status === 'incorrect'
+                            ? moveVerdict === 'HANGING_PIECE' || diagnosticCategory === 'Hanging Piece'
+                              ? 'Blunder: Piece Left Hanging!'
+                              : moveVerdict === 'PREMATURE_CHECK' || diagnosticCategory === 'Premature Check'
+                              ? 'Premature Check (Check ≠ Advantage)'
+                              : `Not Quite: ${diagnosticCategory || 'Tactical Oversight'}`
+                            : hintTier > 0
+                            ? `Hint Level ${hintTier} of 4`
+                            : 'Coach Note'}
+                        </span>
+                        {status === 'incorrect' && lastPlayedSan && (
+                          <span className="text-xs font-mono px-2 py-0.5 rounded bg-red-900/60 text-red-300 font-semibold">
+                            Played: {lastPlayedSan}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs sm:text-sm leading-relaxed">{feedbackMessage}</p>
                     </div>
                   </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-300 flex items-center justify-between">
+                  <div>
+                    <span className="font-semibold text-emerald-400 block mb-0.5">
+                      Your Turn to Calculate & Move
+                    </span>
+                    <p className="text-slate-400 text-xs">
+                      Drag or click pieces on the board to execute your chosen tactic.
+                    </p>
+                  </div>
+                  <span className="text-amber-400 text-xs font-mono">
+                    Need help? Use hints below ↓
+                  </span>
+                </div>
+              )}
+
+              {/* Solved Quick Callout */}
+              {status === 'correct' && (
+                <div className="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl flex items-center justify-between">
+                  <span className="text-xs text-emerald-300 font-medium">
+                    Tactical line solved cleanly!
+                  </span>
+                  <button
+                    onClick={() => setCoachPhase('masterclass')}
+                    className="py-1 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold flex items-center gap-1"
+                  >
+                    <span>View Masterclass Breakdown</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* PHASE 4: MASTERCLASS BREAKDOWN & UNDERSTAND (Deep Codecademy Lesson) */}
+          {coachPhase === 'masterclass' && (
+            <div className="space-y-4 animate-in fade-in duration-200 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
+              {/* Tactical Mechanism Card */}
+              {effectiveTacticalExpl && (
+                <div className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl text-xs sm:text-sm">
+                  <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
+                    <Target className="w-3.5 h-3.5" />
+                    <span>Tactical Mechanism</span>
+                  </span>
+                  <p className="text-slate-200 leading-relaxed">
+                    {effectiveTacticalExpl}
+                  </p>
+                </div>
+              )}
+
+              {/* Calculation Depth Card */}
+              {effectiveCalcExpl && (
+                <div className="p-3 bg-slate-950/40 border border-slate-800 rounded-xl text-xs sm:text-sm">
+                  <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>Calculation & Continuation Lines</span>
+                  </span>
+                  <p className="text-slate-300 leading-relaxed font-mono text-xs">
+                    {effectiveCalcExpl}
+                  </p>
+                </div>
+              )}
+
+              {/* Why Alternatives Fail Card */}
+              {exercise.whyAlternativesFail && exercise.whyAlternativesFail.length > 0 && (
+                <div className="p-3 bg-slate-950/40 border border-slate-800 rounded-xl text-xs">
+                  <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block mb-1.5">
+                    Why Alternatives Fail
+                  </span>
+                  <ul className="space-y-1 text-slate-300">
+                    {Array.isArray(exercise.whyAlternativesFail) &&
+                      exercise.whyAlternativesFail.map((failStr, i) => (
+                        <li key={i} className="flex items-start gap-1.5">
+                          <span className="text-red-400 font-bold shrink-0">✕</span>
+                          <span>{typeof failStr === 'string' ? failStr : (failStr as any).whyItFails}</span>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Recognition Cues */}
+              {exercise.recognitionCues && exercise.recognitionCues.length > 0 && (
+                <div className="p-3 bg-slate-950/40 border border-slate-800 rounded-xl text-xs">
+                  <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block mb-1.5">
+                    How To Spot This in Real Games (Recognition Cues)
+                  </span>
+                  <ul className="space-y-1 text-slate-300">
+                    {exercise.recognitionCues.map((cue, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                        <span>{cue}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Transferable Principle */}
+              {effectivePrinciple && (
+                <div className="p-3.5 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-amber-950/30 border border-emerald-500/40 rounded-xl text-xs sm:text-sm flex items-start gap-3">
+                  <Lightbulb className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block mb-1">
+                      Transferable Grandmaster Principle
+                    </span>
+                    <p className="text-slate-100 font-medium leading-relaxed">
+                      {effectivePrinciple}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Real Game Application Heritage */}
+              {exercise.realGameApplication && (
+                <div className="p-3 bg-slate-800/30 border border-slate-700/60 rounded-xl text-xs text-slate-300">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 flex items-center gap-1">
+                    <BookmarkCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Tournament & World Championship Heritage</span>
+                  </span>
+                  <p>{exercise.realGameApplication}</p>
+                </div>
+              )}
+
+              {/* Interactive Retention Review Question */}
+              {exercise.reviewQuestion && (
+                <div className="p-4 bg-slate-950/90 border border-emerald-500/30 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                      <span>Coach Retention Quiz</span>
+                    </span>
+                    {isQuizSubmitted && (
+                      <button
+                        onClick={handleResetQuiz}
+                        className="text-[11px] text-slate-400 hover:text-slate-200 underline"
+                      >
+                        Try Again
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="text-xs sm:text-sm font-semibold text-slate-100">
+                    {exercise.reviewQuestion.question}
+                  </p>
+
+                  <div className="space-y-1.5">
+                    {exercise.reviewQuestion.options.map((option, idx) => {
+                      const isSelected = selectedQuizIndex === idx;
+                      const isCorrect = idx === exercise.reviewQuestion?.correctIndex;
+
+                      let btnStyle = 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800';
+                      if (isQuizSubmitted) {
+                        if (isCorrect) {
+                          btnStyle = 'bg-emerald-950/80 border-emerald-500/80 text-emerald-200 font-semibold';
+                        } else if (isSelected) {
+                          btnStyle = 'bg-red-950/80 border-red-500/80 text-red-200 line-through';
+                        } else {
+                          btnStyle = 'opacity-50 bg-slate-900 border-slate-800 text-slate-500';
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => handleSelectQuizOption(idx)}
+                          disabled={isQuizSubmitted}
+                          className={`w-full p-2.5 rounded-lg border text-left text-xs transition-all flex items-start gap-2.5 ${btnStyle}`}
+                        >
+                          <span className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+                            {String.fromCharCode(65 + idx)}
+                          </span>
+                          <span className="leading-snug pt-0.5">{option}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {isQuizSubmitted && (
+                    <div
+                      className={`p-3 rounded-lg text-xs leading-relaxed ${
+                        selectedQuizIndex === exercise.reviewQuestion.correctIndex
+                          ? 'bg-emerald-950/50 border border-emerald-500/40 text-emerald-200'
+                          : 'bg-amber-950/50 border border-amber-500/40 text-amber-200'
+                      }`}
+                    >
+                      <span className="font-bold block mb-0.5">
+                        {selectedQuizIndex === exercise.reviewQuestion.correctIndex
+                          ? '✓ Correct! Coach Note:'
+                          : '✕ Inaccurate. Key takeaway:'}
+                      </span>
+                      {exercise.reviewQuestion.explanation}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -568,7 +927,10 @@ export const ExerciseEngine: React.FC<ExerciseEngineProps> = ({
           {status === 'correct' ? (
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between text-xs text-emerald-400 font-medium px-1">
-                <span>Puzzle solved cleanly!</span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>Masterclass Lesson Completed!</span>
+                </span>
                 <span className="font-mono-nums font-bold">+{exercise.xp} XP Awarded</span>
               </div>
 

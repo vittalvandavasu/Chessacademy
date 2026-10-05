@@ -207,6 +207,7 @@ export const AnalysisBoard: React.FC<AnalysisBoardProps> = ({
             orientation={orientation}
             interactive={false}
             arrowGuide={activeArrows}
+            showToolbar={true}
             className="shadow-2xl"
           />
 

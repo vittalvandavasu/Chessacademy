@@ -12,18 +12,21 @@ import {
   ChevronDown,
   ChevronRight,
   Sparkles,
+  Compass,
 } from 'lucide-react';
 
 interface LearnViewProps {
   completedLessons: string[];
   onCompleteLesson: (lessonId: string, xp: number) => void;
   initialLessonId?: string | null;
+  onNavigateToOpenings?: () => void;
 }
 
 export const LearnView: React.FC<LearnViewProps> = ({
   completedLessons,
   onCompleteLesson,
   initialLessonId,
+  onNavigateToOpenings,
 }) => {
   const [selectedPathId, setSelectedPathId] = useState<string>(CURRICULUM_DATA[0].id);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(() => {
@@ -43,17 +46,29 @@ export const LearnView: React.FC<LearnViewProps> = ({
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
       {/* Editorial Header */}
-      <div>
-        <div className="text-xs uppercase font-semibold tracking-wider text-emerald-400 mb-1">
-          Structured Curriculum
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="text-xs uppercase font-semibold tracking-wider text-emerald-400 mb-1">
+            Structured Curriculum
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 font-display">
+            Learning Paths & Progression
+          </h1>
+          <p className="text-slate-400 text-sm max-w-2xl mt-1">
+            Master the game systematically through guided conceptual lessons, physical board manipulation,
+            and automated tactical feedback.
+          </p>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 font-display">
-          Learning Paths & Progression
-        </h1>
-        <p className="text-slate-400 text-sm max-w-2xl mt-1">
-          Master the game systematically through guided conceptual lessons, physical board manipulation,
-          and automated tactical feedback.
-        </p>
+
+        {onNavigateToOpenings && (
+          <button
+            onClick={onNavigateToOpenings}
+            className="shrink-0 py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/40 font-semibold rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm"
+          >
+            <Compass className="w-4 h-4" />
+            <span>Openings Academy (20)</span>
+          </button>
+        )}
       </div>
 
       {/* Path Selector Tabs (Interactive filter control following frontend-design rules) */}

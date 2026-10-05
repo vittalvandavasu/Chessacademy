@@ -184,7 +184,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
           </div>
 
           <div className="max-w-[420px] mx-auto">
-            <Chessboard fen={fen} interactive={true} className="shadow-xl" />
+            <Chessboard fen={fen} interactive={true} showToolbar={true} className="shadow-2xl" />
           </div>
 
           <div>
