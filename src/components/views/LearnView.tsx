@@ -11,8 +11,8 @@ import {
   Zap,
   ChevronDown,
   ChevronRight,
-  Sparkles,
   Compass,
+  ArrowRight,
 } from 'lucide-react';
 
 interface LearnViewProps {
@@ -46,34 +46,33 @@ export const LearnView: React.FC<LearnViewProps> = ({
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
       {/* Editorial Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-[#D5D0C5] pb-6">
         <div>
-          <div className="text-xs uppercase font-semibold tracking-wider text-emerald-400 mb-1">
-            Structured Curriculum
+          <div className="text-[11px] uppercase font-semibold tracking-widest text-[#315C45] mb-1">
+            Structured Chess Academy
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 font-display">
-            Learning Paths & Progression
+          <h1 className="text-2xl sm:text-3xl font-bold font-display text-[#171717]">
+            The Curriculum Journey
           </h1>
-          <p className="text-slate-400 text-sm max-w-2xl mt-1">
-            Master the game systematically through guided conceptual lessons, physical board manipulation,
-            and automated tactical feedback.
+          <p className="text-xs sm:text-sm text-[#171717]/70 max-w-2xl mt-1">
+            A comprehensive sequence of deliberate lessons. Each concept is demonstrated on an interactive board and reinforced with tactical exercises.
           </p>
         </div>
 
         {onNavigateToOpenings && (
           <button
             onClick={onNavigateToOpenings}
-            className="shrink-0 py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/40 font-semibold rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm"
+            className="shrink-0 py-2 px-3.5 bg-[#E8E3D8] hover:bg-[#D5D0C5] text-[#315C45] border border-[#D5D0C5] font-semibold rounded text-xs transition-colors flex items-center gap-1.5"
           >
-            <Compass className="w-4 h-4" />
-            <span>Openings Academy (20)</span>
+            <Compass className="w-3.5 h-3.5" />
+            <span>Openings Explorer (20)</span>
           </button>
         )}
       </div>
 
-      {/* Path Selector Tabs (Interactive filter control following frontend-design rules) */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800">
-        {CURRICULUM_DATA.map((path, idx) => {
+      {/* Curriculum Path Tabs (Editorial, clean, Swiss-style) */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-[#D5D0C5]">
+        {CURRICULUM_DATA.map((path) => {
           const isSelected = path.id === selectedPathId;
           const totalLessons = path.modules.reduce((acc, m) => acc + m.lessons.length, 0);
           const completedInPath = path.modules.reduce(
@@ -86,14 +85,14 @@ export const LearnView: React.FC<LearnViewProps> = ({
             <button
               key={path.id}
               onClick={() => setSelectedPathId(path.id)}
-              className={`py-2 px-4 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex items-center gap-2 border ${
+              className={`py-2 px-3.5 rounded text-xs font-semibold whitespace-nowrap transition-all border ${
                 isSelected
-                  ? 'bg-slate-800 text-emerald-400 border-emerald-500/40 shadow-sm'
-                  : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200 hover:bg-slate-800'
+                  ? 'bg-[#315C45] text-white border-[#315C45] shadow-xs'
+                  : 'bg-[#E8E3D8]/60 text-[#171717]/70 border-[#D5D0C5] hover:text-[#171717] hover:bg-[#E8E3D8]'
               }`}
             >
-              <span>{path.title.split(':')[0]}</span>
-              <span className="font-mono-nums text-[11px] opacity-75">
+              <span>{path.title.replace('Path ', 'Part ')}</span>
+              <span className="font-mono text-[10px] ml-1.5 opacity-80">
                 ({completedInPath}/{totalLessons})
               </span>
             </button>
@@ -101,102 +100,88 @@ export const LearnView: React.FC<LearnViewProps> = ({
         })}
       </div>
 
-      {/* Current Path Overview */}
-      <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Path Syllabus Overview Card */}
+      <div className="p-6 bg-[#E8E3D8]/50 border border-[#D5D0C5] rounded space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <div className="flex items-center gap-2 text-xs text-emerald-400 font-semibold uppercase mb-1">
-              <span>{selectedPath.level}</span>
-              <span aria-hidden="true">·</span>
-              <span>{selectedPath.subtitle}</span>
+            <div className="text-[10px] uppercase font-bold tracking-widest text-[#315C45]">
+              Level: {selectedPath.level} · Path Syllabus
             </div>
-            <h2 className="text-xl font-bold text-slate-100 font-display">
+            <h2 className="text-xl font-bold font-display text-[#171717] mt-0.5">
               {selectedPath.title}
             </h2>
-            <p className="text-slate-300 text-xs sm:text-sm mt-1 leading-relaxed max-w-3xl">
-              {selectedPath.description}
-            </p>
+          </div>
+          <div className="text-xs font-mono text-[#171717]/60">
+            {selectedPath.modules.length} Modules · Deliberate Practice
           </div>
         </div>
+
+        <p className="text-xs sm:text-sm text-[#171717]/80 leading-relaxed max-w-3xl">
+          {selectedPath.description}
+        </p>
       </div>
 
-      {/* Modules & Lesson Cards */}
+      {/* Modules & Lessons Syllabus List */}
       <div className="space-y-6">
         {selectedPath.modules.map((module, mIdx) => (
           <div
             key={module.id}
-            className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm"
+            className="bg-[#F5F1E8] border border-[#D5D0C5] rounded overflow-hidden"
           >
-            <div className="px-6 py-4 bg-slate-950/40 border-b border-slate-800 flex items-center justify-between">
+            {/* Module Header */}
+            <div className="px-6 py-4 bg-[#E8E3D8]/80 border-b border-[#D5D0C5] flex items-center justify-between">
               <div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                <span className="text-[10px] uppercase font-semibold text-[#171717]/60 tracking-wider">
                   Module {mIdx + 1}
                 </span>
-                <h3 className="text-base font-bold text-slate-100 font-display">
+                <h3 className="text-base font-bold font-display text-[#171717]">
                   {module.title}
                 </h3>
               </div>
-              <span className="text-xs text-slate-400 font-mono-nums">
+              <span className="text-xs font-mono text-[#171717]/60">
                 {module.lessons.length} Lessons
               </span>
             </div>
 
-            <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Lessons List in Module */}
+            <div className="divide-y divide-[#D5D0C5]/60">
               {module.lessons.map((lesson, lIdx) => {
                 const isCompleted = completedLessons.includes(lesson.id);
-                // First lesson of path or previous completed allows unlock
-                const isUnlocked = true; // All lessons accessible for open study
-
                 return (
                   <div
                     key={lesson.id}
-                    className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${
-                      isCompleted
-                        ? 'bg-slate-950/50 border-emerald-500/30'
-                        : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
-                    }`}
+                    className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#E8E3D8]/30 transition-colors"
                   >
-                    <div>
-                      <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-                        <div className="flex items-center gap-1.5 font-mono-nums">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{lesson.estimatedMinutes} min</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-emerald-400 font-mono-nums font-semibold">
-                          <Zap className="w-3.5 h-3.5" />
-                          <span>+{lesson.xpReward} XP</span>
-                        </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        {isCompleted ? (
+                          <CheckCircle2 className="w-4 h-4 text-[#315C45] shrink-0" />
+                        ) : (
+                          <span className="w-4 h-4 rounded-full border border-[#D5D0C5] flex items-center justify-center text-[10px] font-mono shrink-0">
+                            {lIdx + 1}
+                          </span>
+                        )}
+                        <h4 className="text-sm font-bold text-[#171717]">{lesson.title}</h4>
                       </div>
-
-                      <h4 className="text-sm font-bold text-slate-100 font-display mb-1">
-                        {lesson.title}
-                      </h4>
-
-                      <p className="text-xs text-slate-400 leading-relaxed line-clamp-2 mb-4">
+                      <p className="text-xs text-[#171717]/70 pl-6 max-w-2xl">
                         {lesson.description}
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-850">
-                      {isCompleted ? (
-                        <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Completed</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-500">Not started</span>
-                      )}
-
+                    <div className="flex items-center gap-4 pl-6 sm:pl-0 shrink-0">
+                      <span className="text-xs text-[#171717]/60 font-mono">
+                        {lesson.estimatedMinutes}m
+                      </span>
                       <button
                         onClick={() => setActiveLesson(lesson)}
-                        className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                        className={`py-1.5 px-3.5 rounded text-xs font-semibold tracking-wider uppercase transition-colors flex items-center gap-1.5 ${
                           isCompleted
-                            ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
-                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+                            ? 'bg-[#E8E3D8] hover:bg-[#D5D0C5] text-[#171717]'
+                            : 'bg-[#315C45] hover:bg-[#284a37] text-white'
                         }`}
                       >
-                        <Play className="w-3 h-3 fill-current" />
-                        <span>{isCompleted ? 'Review' : 'Start Lesson'}</span>
+                        <span>{isCompleted ? 'REVIEW' : 'START'}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -207,14 +192,12 @@ export const LearnView: React.FC<LearnViewProps> = ({
         ))}
       </div>
 
-      {/* Full Interactive Lesson Modal */}
+      {/* Active Split-Screen Lesson Modal */}
       {activeLesson && (
         <LessonModal
           lesson={activeLesson}
           onClose={() => setActiveLesson(null)}
-          onCompleteLesson={(id, xp) => {
-            onCompleteLesson(id, xp);
-          }}
+          onCompleteLesson={onCompleteLesson}
         />
       )}
     </div>

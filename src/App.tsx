@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar, NavTab } from './components/layout/Navbar';
 import { HomeDashboard } from './components/views/HomeDashboard';
+import { PlayView } from './components/views/PlayView';
+import { AnalyzeView } from './components/views/AnalyzeView';
+import { AiTrainer } from './components/views/AiTrainer';
 import { LearnView } from './components/views/LearnView';
 import { OpeningsView } from './components/views/OpeningsView';
 import { PracticeView } from './components/views/PracticeView';
@@ -11,6 +14,7 @@ import { AdminView } from './components/views/AdminView';
 import { LessonModal } from './components/views/LessonModal';
 import { OnboardingModal } from './components/views/OnboardingModal';
 import { ProfileModal } from './components/profile/ProfileModal';
+import { SettingsModal } from './components/profile/SettingsModal';
 import { AuthModal } from './components/auth/AuthModal';
 import { QuickCommandPalette } from './components/navigation/QuickCommandPalette';
 import { StorageService, UserProfile } from './services/storageService';
@@ -44,6 +48,7 @@ export default function App() {
   const [activeLessonModal, setActiveLessonModal] = useState<Lesson | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => !StorageService.isOnboardingCompleted());
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [selectedOpeningIdForModal, setSelectedOpeningIdForModal] = useState<string | null>(null);
@@ -329,7 +334,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+    <div className="min-h-screen flex flex-col bg-[#F5F1E8] text-[#171717] selection:bg-[#315C45]/20 selection:text-[#315C45]">
       {/* Top Navigation */}
       <Navbar
         activeTab={activeTab}
@@ -340,6 +345,7 @@ export default function App() {
         stats={stats}
         user={user}
         onOpenProfile={() => setShowProfileModal(true)}
+        onOpenSettings={() => setShowSettingsModal(true)}
         onOpenAuth={() => setShowAuthModal(true)}
         onResetDemo={handleResetDemo}
         onOpenSearch={() => setShowCommandPalette(true)}
@@ -347,7 +353,7 @@ export default function App() {
 
       {/* Main View Router */}
       <main className="flex-1 pb-16">
-        {activeTab === 'home' && (
+        {(activeTab === 'home' || activeTab === 'journey') && (
           <HomeDashboard
             user={user}
             stats={stats}
@@ -369,14 +375,6 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'openings' && (
-          <OpeningsView
-            completedOpenings={completedOpenings}
-            onCompleteOpening={handleCompleteOpening}
-            initialOpeningId={selectedOpeningIdForModal}
-          />
-        )}
-
         {activeTab === 'practice' && (
           <PracticeView
             dailyPractice={dailyPractice}
@@ -385,6 +383,29 @@ export default function App() {
             onCompleteTask={handleCompleteDailyTask}
             onFinishDailyWorkout={handleFinishDailyWorkout}
             initialConceptFilter={practiceConceptFilter}
+          />
+        )}
+
+        {activeTab === 'play' && (
+          <PlayView userRating={stats.learningRating} />
+        )}
+
+        {activeTab === 'analyze' && (
+          <AnalyzeView />
+        )}
+
+        {activeTab === 'trainer' && (
+          <AiTrainer
+            userRating={stats.learningRating}
+            onBackToDashboard={() => setActiveTab('journey')}
+          />
+        )}
+
+        {activeTab === 'openings' && (
+          <OpeningsView
+            completedOpenings={completedOpenings}
+            onCompleteOpening={handleCompleteOpening}
+            initialOpeningId={selectedOpeningIdForModal}
           />
         )}
 
@@ -463,6 +484,14 @@ export default function App() {
         />
       )}
 
+      {/* Academy Settings Modal */}
+      {showSettingsModal && (
+        <SettingsModal
+          onClose={() => setShowSettingsModal(false)}
+          onResetDemo={handleResetDemo}
+        />
+      )}
+
       {/* Auth & Persona Switcher Modal */}
       {showAuthModal && (
         <AuthModal
@@ -487,20 +516,20 @@ export default function App() {
         onSelectLesson={handleContinueLearning}
       />
 
-      {/* Clean Educational Footer */}
-      <footer className="border-t border-slate-900/80 bg-slate-950 py-8 px-4 text-xs text-slate-500">
+      {/* Clean Educational Academic Footer */}
+      <footer className="border-t border-[#D5D0C5] bg-[#E8E3D8]/60 py-8 px-4 text-xs text-[#171717]/70">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-300 font-display">ChessCadet</span>
+            <span className="font-bold text-[#171717] font-display">ChessCadet</span>
             <span aria-hidden="true">·</span>
-            <span>Mastery Academy</span>
-            <span aria-hidden="true">·</span>
-            <span>20 Verified Opening Repertoires</span>
+            <span>A Personal Chess Academy That Teaches You How to Think</span>
           </div>
-          <div className="flex items-center gap-4 text-slate-500 text-[11px]">
-            <span>Interactive Deliberate Practice</span>
+          <div className="flex items-center gap-4 text-[#171717]/60 text-[11px]">
+            <span>Swiss Editorial Standards</span>
             <span aria-hidden="true">·</span>
-            <span>Signed in as <strong className="text-slate-300 font-medium">{user.name}</strong></span>
+            <span>Deterministic Rules Engine</span>
+            <span aria-hidden="true">·</span>
+            <span>Cadet Coach Pedagogical Layer</span>
           </div>
         </div>
       </footer>

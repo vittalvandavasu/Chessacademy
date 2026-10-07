@@ -1,25 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { UserStats } from '../../types/chess';
 import { UserProfile } from '../../services/storageService';
 import { ChessCadetLogo } from '../branding/ChessCadetLogo';
 import {
-  Flame,
-  Zap,
   Search,
   BookOpen,
+  Zap,
+  Swords,
+  Brain,
+  Sliders,
+  User,
   Compass,
-  Target,
-  GraduationCap,
-  TrendingUp,
-  Users,
-  ShieldAlert,
+  ArrowRight,
+  Flame,
 } from 'lucide-react';
 
 export type NavTab =
+  | 'journey'
   | 'home'
   | 'learn'
-  | 'openings'
   | 'practice'
+  | 'play'
+  | 'analyze'
+  | 'trainer'
+  | 'openings'
   | 'puzzles'
   | 'progress'
   | 'classroom'
@@ -31,6 +35,7 @@ interface NavbarProps {
   stats: UserStats;
   user: UserProfile & { role?: string };
   onOpenProfile?: () => void;
+  onOpenSettings?: () => void;
   onOpenAuth?: () => void;
   onResetDemo?: () => void;
   onOpenSearch?: () => void;
@@ -42,159 +47,149 @@ export const Navbar: React.FC<NavbarProps> = ({
   stats,
   user,
   onOpenProfile,
+  onOpenSettings,
   onOpenAuth,
   onResetDemo,
   onOpenSearch,
 }) => {
-  const navLinks: { id: NavTab; label: string; icon: any }[] = [
-    { id: 'home', label: 'Dashboard', icon: TrendingUp },
-    { id: 'learn', label: 'Curriculum', icon: BookOpen },
-    { id: 'openings', label: 'Openings', icon: Compass },
-    { id: 'puzzles', label: 'Tactics', icon: Target },
-    { id: 'practice', label: 'Practice', icon: Zap },
-    { id: 'progress', label: 'Mastery', icon: GraduationCap },
-    { id: 'classroom', label: 'Classroom', icon: Users },
-    { id: 'admin', label: 'Admin', icon: ShieldAlert },
+  // Main Navigation strictly 4 items: LEARN, PRACTICE, PLAY, ANALYZE
+  const mainNavItems: { id: NavTab; label: string }[] = [
+    { id: 'learn', label: 'LEARN' },
+    { id: 'practice', label: 'PRACTICE' },
+    { id: 'play', label: 'PLAY' },
+    { id: 'analyze', label: 'ANALYZE' },
   ];
 
-  return (
-    <header className="sticky top-0 z-40 w-full bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-        {/* Zone 1: Redesigned Logo */}
-        <button
-          onClick={() => onSelectTab('home')}
-          className="focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-xl"
-          title="ChessCadet Home"
-        >
-          <ChessCadetLogo size="sm" showWordmark={true} />
-        </button>
+  const isJourneyActive = activeTab === 'journey' || activeTab === 'home';
 
-        {/* Zone 2: Navigation Links (Desktop) */}
-        <nav className="hidden lg:flex items-center gap-1">
-          {navLinks.map((link) => {
-            const isActive = activeTab === link.id;
-            const Icon = link.icon;
+  return (
+    <header className="sticky top-0 z-40 w-full bg-[#F5F1E8]/95 backdrop-blur-xs border-b border-[#D5D0C5] text-[#171717] transition-colors">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+        {/* Zone 1: Academic Crest & Brand Lockup */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onSelectTab('journey')}
+            className="focus:outline-none focus-visible:ring-1 focus-visible:ring-[#315C45] rounded"
+            title="ChessCadet · Your Chess Journey"
+          >
+            <ChessCadetLogo size="sm" showWordmark={true} />
+          </button>
+
+          {/* Subtle Journey Indicator button */}
+          <button
+            onClick={() => onSelectTab('journey')}
+            className={`hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold tracking-wider uppercase rounded transition-colors ${
+              isJourneyActive
+                ? 'bg-[#315C45] text-white'
+                : 'text-[#171717]/60 hover:text-[#171717] hover:bg-[#E8E3D8]'
+            }`}
+          >
+            <span>JOURNEY</span>
+          </button>
+        </div>
+
+        {/* Zone 2: Main Navigation (Strictly: LEARN, PRACTICE, PLAY, ANALYZE) */}
+        <nav className="hidden md:flex items-center gap-8">
+          {mainNavItems.map((item) => {
+            const isActive = activeTab === item.id;
             return (
               <button
-                key={link.id}
-                onClick={() => onSelectTab(link.id)}
-                className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                key={item.id}
+                onClick={() => onSelectTab(item.id)}
+                className={`py-1 text-xs font-semibold tracking-widest uppercase transition-all relative ${
                   isActive
-                    ? 'bg-slate-800/90 text-emerald-400 shadow-sm border border-slate-700/80'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
+                    ? 'text-[#315C45]'
+                    : 'text-[#171717]/70 hover:text-[#171717]'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-400' : 'text-slate-500'}`} />
-                <span>{link.label}</span>
+                <span>{item.label}</span>
+                {isActive && (
+                  <span className="absolute -bottom-[21px] left-0 right-0 h-0.5 bg-[#315C45]" />
+                )}
               </button>
             );
           })}
         </nav>
 
-        {/* Zone 3: Quick Omni-Search + Metrics & Profile */}
+        {/* Zone 3: Secondary Controls (Search, Discipline, Settings, Profile) */}
         <div className="flex items-center gap-3">
-          {/* Quick Search Shortcut Trigger */}
+          {/* Quick Search Shortcut */}
           {onOpenSearch && (
             <button
               onClick={onOpenSearch}
-              className="flex items-center gap-2 py-1.5 px-3 rounded-lg bg-slate-900/90 hover:bg-slate-850 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs transition-colors shadow-inner"
-              title="Quick Search (⌘K / Ctrl+K)"
+              className="flex items-center gap-2 py-1.5 px-2.5 rounded bg-[#E8E3D8] hover:bg-[#D5D0C5]/60 border border-[#D5D0C5] text-[#171717]/70 hover:text-[#171717] text-xs transition-colors"
+              title="Search Curriculum & Concepts (⌘K)"
             >
-              <Search className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">Search...</span>
-              <kbd className="hidden sm:inline text-[10px] font-mono text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
+              <Search className="w-3.5 h-3.5 text-[#315C45]" />
+              <span className="hidden lg:inline text-[11px]">Search</span>
+              <kbd className="hidden lg:inline text-[9px] font-mono text-[#171717]/50 bg-[#F5F1E8] px-1 py-0.5 rounded border border-[#D5D0C5]">
                 ⌘K
               </kbd>
             </button>
           )}
 
-          {/* Gamification Stats: Streak & XP */}
-          <div className="hidden sm:flex items-center gap-3 text-xs pl-2 border-l border-slate-850">
-            {/* Streak */}
-            <div
-              className="flex items-center gap-1 font-mono-nums text-amber-400 font-semibold"
-              title={`${stats.currentStreakDays}-day study streak`}
-            >
-              <Flame className="w-4 h-4 fill-amber-500/20 text-amber-500" />
-              <span>{stats.currentStreakDays}d</span>
-            </div>
-
-            {/* Level & XP */}
-            <div
-              className="flex items-center gap-1 font-mono-nums text-emerald-400 font-semibold"
-              title={`Level ${stats.level} · ${stats.totalXp} XP`}
-            >
-              <Zap className="w-4 h-4 text-emerald-400" />
-              <span className="text-slate-200">{stats.totalXp} XP</span>
-            </div>
+          {/* Learning Streak Discipline */}
+          <div
+            className="hidden sm:flex items-center gap-1.5 text-xs text-[#171717] font-mono px-2 py-1 bg-[#E8E3D8] border border-[#D5D0C5] rounded"
+            title={`${stats.currentStreakDays}-day study discipline`}
+          >
+            <Flame className="w-3.5 h-3.5 text-[#C7A45D]" />
+            <span className="font-semibold">{stats.currentStreakDays}d</span>
           </div>
 
-          {/* User Profile Avatar & Switcher */}
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-800/80">
+          {/* Secondary: SETTINGS */}
+          {onOpenSettings && (
             <button
-              onClick={onOpenProfile}
-              className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors group"
-              title="Open User Profile"
+              onClick={onOpenSettings}
+              className="p-2 rounded hover:bg-[#E8E3D8] text-[#171717]/70 hover:text-[#171717] transition-colors"
+              title="Settings & Board Preferences"
             >
-              <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-750 flex items-center justify-center text-xs font-bold text-emerald-400 group-hover:border-emerald-500/50 transition-colors shadow-sm">
-                {user.name.split(' ').map((n) => n[0]).join('')}
-              </div>
-              <div className="hidden xl:flex flex-col text-left">
-                <span className="text-xs font-semibold text-slate-200 leading-tight">
-                  {user.name.split(' ')[0]}
-                </span>
-                <span
-                  className={`text-[10px] font-mono leading-tight ${
-                    user.role === 'ADMIN'
-                      ? 'text-amber-400 font-bold'
-                      : user.role === 'TEACHER'
-                      ? 'text-indigo-400 font-bold'
-                      : 'text-emerald-400'
-                  }`}
-                >
-                  {user.role || 'STUDENT'}
-                </span>
-              </div>
+              <Sliders className="w-4 h-4" />
             </button>
+          )}
 
-            {onOpenAuth && (
-              <button
-                onClick={onOpenAuth}
-                className="py-1 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-[11px] font-medium text-slate-300 hover:text-white border border-slate-800 transition-colors hidden md:inline"
-                title="Switch persona or sign in"
-              >
-                Switch Role
-              </button>
-            )}
-
-            {onResetDemo && (
-              <button
-                onClick={onResetDemo}
-                className="hidden 2xl:inline text-[11px] text-slate-500 hover:text-slate-300 transition-colors underline"
-                title="Reset demo data to default baseline"
-              >
-                Reset
-              </button>
-            )}
-          </div>
+          {/* Secondary: PROFILE */}
+          <button
+            onClick={onOpenProfile}
+            className="flex items-center gap-2 pl-2 border-l border-[#D5D0C5] group text-left"
+            title="User Profile & Academic Record"
+          >
+            <div className="w-7 h-7 rounded bg-[#E8E3D8] border border-[#D5D0C5] group-hover:border-[#315C45] flex items-center justify-center text-xs font-bold text-[#315C45] transition-colors">
+              {user.name.split(' ').map((n) => n[0]).join('')}
+            </div>
+            <div className="hidden xl:flex flex-col">
+              <span className="text-xs font-semibold text-[#171717] leading-tight">
+                {user.name.split(' ')[0]}
+              </span>
+              <span className="text-[10px] font-mono text-[#171717]/60 leading-tight">
+                Level {stats.level}
+              </span>
+            </div>
+          </button>
         </div>
       </div>
 
-      {/* Mobile / Tablet Horizontal Navigation */}
-      <div className="lg:hidden flex items-center gap-1 px-3 py-2 border-t border-slate-850 overflow-x-auto text-xs bg-slate-950/80">
-        {navLinks.map((link) => {
-          const isActive = activeTab === link.id;
+      {/* Mobile Horizontal Bar */}
+      <div className="md:hidden flex items-center justify-around px-3 py-2 border-t border-[#D5D0C5] text-xs bg-[#E8E3D8]/70">
+        <button
+          onClick={() => onSelectTab('journey')}
+          className={`py-1 px-2 font-semibold text-[11px] tracking-wider uppercase ${
+            isJourneyActive ? 'text-[#315C45] font-bold' : 'text-[#171717]/70'
+          }`}
+        >
+          JOURNEY
+        </button>
+        {mainNavItems.map((item) => {
+          const isActive = activeTab === item.id;
           return (
             <button
-              key={link.id}
-              onClick={() => onSelectTab(link.id)}
-              className={`py-1 px-2.5 rounded-md whitespace-nowrap transition-colors text-xs font-medium ${
-                isActive
-                  ? 'bg-slate-800 text-emerald-400 font-semibold border border-slate-700'
-                  : 'text-slate-400 hover:text-slate-200'
+              key={item.id}
+              onClick={() => onSelectTab(item.id)}
+              className={`py-1 px-2 font-semibold text-[11px] tracking-wider uppercase ${
+                isActive ? 'text-[#315C45] font-bold' : 'text-[#171717]/70'
               }`}
             >
-              {link.label}
+              {item.label}
             </button>
           );
         })}

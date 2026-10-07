@@ -1,19 +1,17 @@
 import React, { useState } from 'react';
-import { Lesson, DiscussionComment } from '../../types/chess';
+import { Lesson } from '../../types/chess';
 import { Chessboard } from '../chess/Chessboard';
 import { ExerciseEngine } from '../exercise/ExerciseEngine';
-import { StorageService } from '../../services/storageService';
 import {
   X,
   BookOpen,
-  Play,
   CheckCircle2,
-  MessageSquare,
-  ThumbsUp,
   ArrowRight,
-  Send,
-  Zap,
+  HelpCircle,
+  Brain,
+  RotateCcw,
 } from 'lucide-react';
+import { playSuccessSound, playErrorSound } from '../../lib/chess/soundEffects';
 
 interface LessonModalProps {
   lesson: Lesson;
@@ -26,19 +24,26 @@ export const LessonModal: React.FC<LessonModalProps> = ({
   onClose,
   onCompleteLesson,
 }) => {
-  const [activeStep, setActiveStep] = useState<'concept' | 'exercises' | 'summary'>('concept');
+  const [activeStep, setActiveStep] = useState<'concept' | 'exercises' | 'report'>('concept');
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [earnedXp, setEarnedXp] = useState(0);
   const [solvedCount, setSolvedCount] = useState(0);
-  const [discussions, setDiscussions] = useState<DiscussionComment[]>(() =>
-    StorageService.getDiscussions(lesson.id)
-  );
-  const [newComment, setNewComment] = useState('');
-  const [activeTab, setActiveTab] = useState<'lesson' | 'discussion'>('lesson');
+  const [showConceptWhy, setShowConceptWhy] = useState(false);
+
+  // Concept check state for Step 1
+  const [conceptChoiceSelected, setConceptChoiceSelected] = useState<number | null>(null);
+  const [conceptChoiceAnswered, setConceptChoiceAnswered] = useState(false);
 
   const currentSection = lesson.sections[0];
   const totalExercises = currentSection?.exercises.length || 0;
   const currentExercise = currentSection?.exercises[currentExerciseIndex];
+
+  const handleConceptAnswer = (idx: number, isCorrect: boolean) => {
+    setConceptChoiceSelected(idx);
+    setConceptChoiceAnswered(true);
+    if (isCorrect) playSuccessSound();
+    else playErrorSound();
+  };
 
   const handleExerciseSolved = (result: { xp: number }) => {
     setEarnedXp((prev) => prev + result.xp);
@@ -49,241 +54,192 @@ export const LessonModal: React.FC<LessonModalProps> = ({
     if (currentExerciseIndex < totalExercises - 1) {
       setCurrentExerciseIndex((prev) => prev + 1);
     } else {
-      // Completed all exercises in section!
-      setActiveStep('summary');
+      setActiveStep('report');
       onCompleteLesson(lesson.id, lesson.xpReward + earnedXp);
     }
   };
 
-  const handlePostComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
-
-    const user = StorageService.getUser();
-    const stats = StorageService.getStats();
-    const commentObj: DiscussionComment = {
-      id: `comm-${Date.now()}`,
-      lessonId: lesson.id,
-      authorName: user.name,
-      authorAvatar: user.name.slice(0, 2).toUpperCase(),
-      authorRating: stats.learningRating,
-      timestamp: 'Just now',
-      content: newComment.trim(),
-      upvotes: 0,
-    };
-
-    StorageService.addDiscussionComment(commentObj);
-    setDiscussions([commentObj, ...discussions]);
-    setNewComment('');
-  };
-
-  const handleUpvote = (id: string) => {
-    setDiscussions(
-      discussions.map((c) => {
-        if (c.id === id) {
-          const upvoted = c.userHasUpvoted;
-          return {
-            ...c,
-            upvotes: upvoted ? c.upvotes - 1 : c.upvotes + 1,
-            userHasUpvoted: !upvoted,
-          };
-        }
-        return c;
-      })
-    );
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-5xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#171717]/50 backdrop-blur-xs overflow-y-auto">
+      <div className="relative w-full max-w-6xl bg-[#F5F1E8] border border-[#D5D0C5] shadow-2xl text-[#171717] overflow-hidden flex flex-col max-h-[94vh]">
         {/* Modal Top Bar */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div className="px-6 py-4 border-b border-[#D5D0C5] flex items-center justify-between bg-[#E8E3D8]/80">
           <div className="flex items-center gap-3">
-            <span className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+            <span className="w-8 h-8 rounded border border-[#D5D0C5] bg-[#F5F1E8] flex items-center justify-center text-[#315C45]">
               <BookOpen className="w-4 h-4" />
             </span>
             <div>
-              <div className="text-[11px] uppercase font-semibold tracking-wider text-slate-400">
-                Interactive Lesson
+              <div className="text-[10px] uppercase font-semibold tracking-widest text-[#315C45]">
+                Curriculum Lesson · {lesson.concept}
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-100 font-display">
+              <h2 className="text-lg font-bold font-display text-[#171717]">
                 {lesson.title}
               </h2>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Tabs: Lesson vs Discussion */}
-            <div className="flex items-center bg-slate-800 p-0.5 rounded-lg text-xs font-medium">
-              <button
-                onClick={() => setActiveTab('lesson')}
-                className={`py-1.5 px-3 rounded-md transition-colors ${
-                  activeTab === 'lesson'
-                    ? 'bg-slate-700 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Lesson
-              </button>
-              <button
-                onClick={() => setActiveTab('discussion')}
-                className={`py-1.5 px-3 rounded-md transition-colors flex items-center gap-1.5 ${
-                  activeTab === 'discussion'
-                    ? 'bg-slate-700 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>Discussion ({discussions.length})</span>
-              </button>
-            </div>
-
+            <span className="text-xs font-mono text-[#171717]/60">
+              {activeStep === 'concept'
+                ? 'Phase 1: Theory & Concept Check'
+                : activeStep === 'exercises'
+                ? `Phase 2: Drill ${currentExerciseIndex + 1}/${totalExercises}`
+                : 'Phase 3: Coach’s Report'}
+            </span>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded hover:bg-[#D5D0C5]/50 text-[#171717]/70 hover:text-[#171717] transition-colors"
+              title="Close Lesson"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          {activeTab === 'discussion' ? (
-            /* Discussion Forum */
-            <div className="max-w-2xl mx-auto space-y-6">
-              <div className="border-b border-slate-800 pb-4">
-                <h3 className="text-base font-bold text-slate-100 font-display mb-1">
-                  Community Discussion & Analysis
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Ask questions, share tactical insights, and discuss concepts with fellow students.
-                </p>
+        {/* Modal Body: Two-Column Split-Screen Learning Environment */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {activeStep === 'concept' ? (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* LEFT: Large Interactive Chessboard (Hero of the UI) */}
+              <div className="lg:col-span-7 flex flex-col items-center">
+                <div className="w-full max-w-[500px]">
+                  <Chessboard
+                    fen={currentSection.demonstrationFen}
+                    arrowGuide={currentSection.demonstrationArrows || []}
+                    interactive={false}
+                    showToolbar={true}
+                    className="shadow-sm"
+                  />
+                </div>
+                <div className="mt-3 text-xs font-mono text-[#171717]/60 text-center">
+                  Theoretical Demonstration Diagram · Key Moves Illustrated
+                </div>
               </div>
 
-              {/* Comment submission form */}
-              <form onSubmit={handlePostComment} className="space-y-3">
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Share a tip or ask a question about this lesson..."
-                  className="w-full h-24 p-3 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
-                />
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={!newComment.trim()}
-                    className="py-2 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Post Comment</span>
-                  </button>
-                </div>
-              </form>
-
-              {/* Comment List */}
-              <div className="space-y-4 pt-2">
-                {discussions.map((comment) => (
-                  <div
-                    key={comment.id}
-                    className="p-4 bg-slate-950/60 border border-slate-800/80 rounded-xl space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-emerald-400">
-                          {comment.authorAvatar}
-                        </div>
-                        <span className="text-xs font-semibold text-slate-200">
-                          {comment.authorName}
-                        </span>
-                        <span className="text-[11px] text-slate-400 font-mono-nums">
-                          ({comment.authorRating})
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-slate-500">{comment.timestamp}</span>
-                    </div>
-
-                    <p className="text-xs text-slate-300 leading-relaxed">{comment.content}</p>
-
-                    <div className="pt-2 flex items-center gap-4 text-xs text-slate-400">
-                      <button
-                        onClick={() => handleUpvote(comment.id)}
-                        className={`flex items-center gap-1.5 hover:text-emerald-400 transition-colors ${
-                          comment.userHasUpvoted ? 'text-emerald-400 font-semibold' : ''
-                        }`}
-                      >
-                        <ThumbsUp className="w-3.5 h-3.5" />
-                        <span className="font-mono-nums">{comment.upvotes} Helpful</span>
-                      </button>
-                    </div>
+              {/* RIGHT: Lesson Explanation + Interactive Concept Check */}
+              <div className="lg:col-span-5 space-y-6">
+                <div className="p-6 bg-[#E8E3D8]/60 border border-[#D5D0C5] rounded space-y-4">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#315C45]">
+                    Concept Breakdown
                   </div>
-                ))}
-              </div>
-            </div>
-          ) : activeStep === 'concept' ? (
-            /* Step 1: Concept & Interactive Demonstration */
-            <div className="flex flex-col lg:flex-row items-center gap-8 max-w-4xl mx-auto">
-              <div className="w-full max-w-[420px] shrink-0">
-                <Chessboard
-                  fen={currentSection.demonstrationFen}
-                  arrowGuide={currentSection.demonstrationArrows || []}
-                  interactive={false}
-                  showToolbar={true}
-                  className="w-full max-w-[420px] shadow-2xl"
-                />
-                <div className="text-center mt-2 text-xs text-slate-400 font-mono-nums">
-                  Interactive Diagram & Key Lines
-                </div>
-              </div>
-
-              <div className="flex-1 space-y-5">
-                <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-                    Step 1 · Theoretical Concept
-                  </span>
-                  <h3 className="text-xl font-bold text-slate-100 font-display mt-1 mb-3">
+                  <h3 className="text-xl font-bold font-display text-[#171717]">
                     {currentSection.title}
                   </h3>
-                  <p className="text-slate-300 text-sm leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[#171717]/80 leading-relaxed font-sans">
                     {currentSection.conceptIntro}
                   </p>
+
+                  {currentSection.bulletPoints && (
+                    <ul className="space-y-1.5 text-xs text-[#171717]/85 pt-1">
+                      {currentSection.bulletPoints.map((pt, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#315C45] mt-1.5 shrink-0" />
+                          <span>{pt}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <div className="p-3 bg-[#F5F1E8] border border-[#D5D0C5] rounded text-xs text-[#171717]">
+                    <strong className="text-[#315C45]">Key Takeaway:</strong>{' '}
+                    {currentSection.keyTakeaway}
+                  </div>
                 </div>
 
-                {currentSection.bulletPoints && (
-                  <ul className="space-y-2 text-xs text-slate-300">
-                    {currentSection.bulletPoints.map((point, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-                        <span>{point}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                {/* Immediate Interactive Concept Check */}
+                <div className="p-6 bg-[#F5F1E8] border border-[#D5D0C5] rounded space-y-3">
+                  <div className="text-xs font-bold uppercase tracking-wider text-[#171717]">
+                    Interactive Check: Identify the Tactical Concept
+                  </div>
+                  <p className="text-xs text-[#171717]/70">
+                    Which candidate move demonstrated on the board establishes central domination or initiates the tactical threat?
+                  </p>
 
-                <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-400">
-                  <span className="font-semibold text-slate-200 block mb-1">Key Takeaway</span>
-                  <span>{currentSection.keyTakeaway}</span>
+                  <div className="space-y-2 pt-1">
+                    {[
+                      {
+                        label: `Play ${currentSection.demonstrationMove || 'the designated move'} to seize line control`,
+                        isCorrect: true,
+                        why: 'Superb. You identified the forcing destination square correctly. Establishing control on this key square restricts enemy mobility.',
+                      },
+                      {
+                        label: 'Retreat the piece to passive home squares',
+                        isCorrect: false,
+                        why: 'Passive retreats surrender square control and allow the opponent to develop unhindered.',
+                      },
+                      {
+                        label: 'Push flank pawns without central control',
+                        isCorrect: false,
+                        why: 'Flank operations before central stabilization leave your position susceptible to central counter-punches.',
+                      },
+                    ].map((opt, idx) => {
+                      const isSelected = conceptChoiceSelected === idx;
+                      let btnClass = 'border-[#D5D0C5] bg-[#E8E3D8]/50 text-[#171717] hover:border-[#315C45]/50';
+                      if (conceptChoiceAnswered) {
+                        if (opt.isCorrect) btnClass = 'border-[#315C45] bg-[#315C45]/10 text-[#315C45] font-semibold';
+                        else if (isSelected) btnClass = 'border-[#B94A48] bg-[#B94A48]/10 text-[#B94A48]';
+                        else btnClass = 'opacity-50 border-[#D5D0C5] text-[#171717]';
+                      }
+
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => handleConceptAnswer(idx, opt.isCorrect)}
+                          disabled={conceptChoiceAnswered}
+                          className={`w-full p-2.5 text-left border rounded text-xs transition-all ${btnClass}`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Cadet Coach Subtle Layer */}
+                  {conceptChoiceAnswered && (
+                    <div className="p-3 bg-[#E8E3D8] border border-[#D5D0C5] rounded space-y-2 animate-in fade-in">
+                      <div className="flex items-center justify-between text-xs font-semibold">
+                        <span className={conceptChoiceSelected === 0 ? 'text-[#315C45]' : 'text-[#B94A48]'}>
+                          {conceptChoiceSelected === 0
+                            ? 'Nice. You identified the destination square correctly.'
+                            : 'Not quite. Review the highlighted squares on the board.'}
+                        </span>
+                        <button
+                          onClick={() => setShowConceptWhy(!showConceptWhy)}
+                          className="text-[11px] font-bold text-[#315C45] uppercase tracking-wider hover:underline flex items-center gap-1"
+                        >
+                          <span>WHY?</span>
+                          <HelpCircle className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {showConceptWhy && (
+                        <p className="text-xs text-[#171717]/80 leading-relaxed pt-1 border-t border-[#D5D0C5]">
+                          The move demonstrated on the board coordinates multiple pieces against a single target. By claiming this square, you prevent the opponent from developing their knight or rook.
+                        </p>
+                      )}
+
+                      <div className="pt-2 flex justify-end">
+                        <button
+                          onClick={() => setActiveStep('exercises')}
+                          className="py-2 px-4 bg-[#315C45] hover:bg-[#284a37] text-white text-xs font-semibold rounded flex items-center gap-2 transition-colors shadow-xs"
+                        >
+                          <span>START EXERCISES ({totalExercises} DRILLS) →</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-
-                <button
-                  onClick={() => setActiveStep('exercises')}
-                  className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
-                >
-                  <span>Start Exercises ({totalExercises} drills)</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
               </div>
             </div>
           ) : activeStep === 'exercises' && currentExercise ? (
-            /* Step 2: Interactive Exercises */
-            <div>
-              {/* Progress step counter */}
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-4 max-w-5xl mx-auto px-2">
-                <span>
+            /* Step 2: Interactive Drills */
+            <div className="max-w-5xl mx-auto space-y-4">
+              <div className="flex items-center justify-between text-xs text-[#171717]/70 border-b border-[#D5D0C5] pb-2">
+                <span className="font-semibold uppercase tracking-wider">
                   Exercise {currentExerciseIndex + 1} of {totalExercises}
                 </span>
-                <span className="font-mono-nums text-emerald-400">
-                  Earned: +{earnedXp} XP
+                <span className="font-mono text-[#315C45] font-semibold">
+                  Accrued Score: +{earnedXp} Points
                 </span>
               </div>
 
@@ -296,44 +252,69 @@ export const LessonModal: React.FC<LessonModalProps> = ({
               />
             </div>
           ) : (
-            /* Step 3: Performance Summary & Next Lesson Unlock */
-            <div className="max-w-md mx-auto py-8 text-center space-y-6">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto shadow-lg">
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
-
-              <div>
-                <h3 className="text-2xl font-bold text-slate-100 font-display">
-                  Lesson Completed!
-                </h3>
-                <p className="text-slate-300 text-sm mt-1">
-                  You have successfully understood the mechanics and solved all practice exercises for{' '}
-                  <span className="text-emerald-400 font-medium">{lesson.title}</span>.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 p-4 bg-slate-950 border border-slate-800 rounded-xl text-left">
-                <div>
-                  <span className="text-[11px] text-slate-400 uppercase">XP Awarded</span>
-                  <div className="text-xl font-bold text-emerald-400 font-mono-nums flex items-center gap-1">
-                    <Zap className="w-4 h-4" />
-                    <span>+{lesson.xpReward + earnedXp} XP</span>
+            /* Step 3: Coach’s Report (Concise, serious, no childish badges) */
+            <div className="max-w-md mx-auto py-8 space-y-6">
+              <div className="p-8 bg-[#E8E3D8] border border-[#D5D0C5] rounded space-y-6 text-center">
+                <div className="space-y-1">
+                  <div className="text-[11px] uppercase tracking-widest font-bold text-[#315C45]">
+                    LESSON COMPLETE
+                  </div>
+                  <div className="text-4xl font-bold font-mono text-[#171717]">
+                    82%
+                  </div>
+                  <div className="text-base font-bold font-display text-[#171717]">
+                    {lesson.title}
                   </div>
                 </div>
-                <div>
-                  <span className="text-[11px] text-slate-400 uppercase">Drills Solved</span>
-                  <div className="text-xl font-bold text-slate-100 font-mono-nums">
-                    {solvedCount} / {totalExercises}
+
+                {/* Mastered vs Still Developing Checklist */}
+                <div className="text-left space-y-4 border-t border-b border-[#D5D0C5] py-4 text-xs">
+                  <div>
+                    <div className="font-bold text-[#315C45] uppercase tracking-wider text-[11px] mb-1.5">
+                      Mastered:
+                    </div>
+                    <ul className="space-y-1 text-[#171717]">
+                      <li className="flex items-center gap-2">
+                        <span className="text-[#315C45] font-bold">✓</span>
+                        <span>Piece symbols & destination squares</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-[#315C45] font-bold">✓</span>
+                        <span>Forcing line calculation</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-[#315C45] font-bold">✓</span>
+                        <span>Pinning mechanics against high-value targets</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <div className="font-bold text-[#C7A45D] uppercase tracking-wider text-[11px] mb-1.5">
+                      Still Developing:
+                    </div>
+                    <ul className="space-y-1 text-[#171717]/80">
+                      <li className="flex items-center gap-2">
+                        <span className="text-[#C7A45D]">○</span>
+                        <span>Disambiguation under multi-piece pressure</span>
+                      </li>
+                    </ul>
                   </div>
                 </div>
-              </div>
 
-              <button
-                onClick={onClose}
-                className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-lg shadow-md transition-colors"
-              >
-                Back to Curriculum
-              </button>
+                {/* Next Step & Primary CTA */}
+                <div className="space-y-3">
+                  <div className="text-xs text-[#171717]/70">
+                    NEXT STEP: <strong className="text-[#171717]">Mastering Double Attacks</strong>
+                  </div>
+                  <button
+                    onClick={onClose}
+                    className="w-full py-3 px-4 bg-[#315C45] hover:bg-[#284a37] text-white font-semibold text-xs tracking-wider uppercase rounded transition-colors shadow-xs"
+                  >
+                    CONTINUE →
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

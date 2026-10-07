@@ -10,7 +10,7 @@ import {
 } from '../../lib/chess/soundEffects';
 import { RotateCw, Palette, Sparkles, Volume2, VolumeX, Eye } from 'lucide-react';
 
-export type BoardThemeId = 'green' | 'wood' | 'blue' | 'dark' | 'glass';
+export type BoardThemeId = 'tournament' | 'green' | 'wood' | 'blue' | 'dark' | 'glass';
 
 export interface BoardTheme {
   id: BoardThemeId;
@@ -24,9 +24,19 @@ export interface BoardTheme {
 }
 
 export const BOARD_THEMES: Record<BoardThemeId, BoardTheme> = {
+  tournament: {
+    id: 'tournament',
+    name: 'Academy Tournament',
+    lightSquare: '#E8E1D3',
+    darkSquare: '#6D806D',
+    borderColor: '#D5D0C5',
+    coordLight: '#6D806D',
+    coordDark: '#E8E1D3',
+    lastMoveTint: 'rgba(199, 164, 93, 0.45)',
+  },
   green: {
     id: 'green',
-    name: 'Chess.com Green',
+    name: 'Club Green',
     lightSquare: '#EBECD0',
     darkSquare: '#739552',
     borderColor: '#262421',
@@ -76,15 +86,30 @@ export const BOARD_THEMES: Record<BoardThemeId, BoardTheme> = {
   },
 };
 
+export interface BoxHighlight {
+  square: string;
+  color: 'green' | 'red' | 'amber' | 'blue';
+}
+
+export interface ArrowGuideItem {
+  from: string;
+  to: string;
+  color?: string;
+  dashed?: boolean;
+}
+
 export interface ChessboardProps {
   fen: string;
   orientation?: 'white' | 'black';
   interactive?: boolean;
   onMove?: (move: { from: Square; to: Square; promotion?: 'q' | 'r' | 'b' | 'n'; san: string; fen: string }) => void;
   highlightSquares?: string[];
-  arrowGuide?: { from: string; to: string; color?: string }[];
+  boxHighlights?: BoxHighlight[];
+  arrowGuide?: ArrowGuideItem[];
   showCoordinates?: boolean;
   showToolbar?: boolean;
+  showEvalBar?: boolean;
+  evalScore?: number | string;
   theme?: BoardThemeId;
   pieceSet?: PieceSet;
   className?: string;
@@ -98,9 +123,12 @@ export const Chessboard: React.FC<ChessboardProps> = ({
   interactive = true,
   onMove,
   highlightSquares = [],
+  boxHighlights = [],
   arrowGuide = [],
   showCoordinates = true,
   showToolbar = false,
+  showEvalBar = false,
+  evalScore = 0,
   theme: propTheme,
   pieceSet: propPieceSet,
   className = '',
@@ -121,9 +149,9 @@ export const Chessboard: React.FC<ChessboardProps> = ({
     if (propTheme) return propTheme;
     try {
       const saved = localStorage.getItem('chesscadet_board_theme');
-      return (saved as BoardThemeId) || 'green';
+      return (saved as BoardThemeId) || 'tournament';
     } catch {
-      return 'green';
+      return 'tournament';
     }
   });
 
@@ -131,16 +159,16 @@ export const Chessboard: React.FC<ChessboardProps> = ({
     if (propPieceSet) return propPieceSet;
     try {
       const saved = localStorage.getItem('chesscadet_piece_set');
-      return (saved as PieceSet) || 'neo';
+      return (saved as PieceSet) || 'staunton';
     } catch {
-      return 'neo';
+      return 'staunton';
     }
   });
 
-  const activeTheme = BOARD_THEMES[currentThemeId] || BOARD_THEMES.green;
+  const activeTheme = BOARD_THEMES[currentThemeId] || BOARD_THEMES.tournament;
 
   // Right-click user annotations (Arrows & Square Highlights just like Chess.com!)
-  const [userArrows, setUserArrows] = useState<{ from: string; to: string; color: string }[]>([]);
+  const [userArrows, setUserArrows] = useState<ArrowGuideItem[]>([]);
   const [userHighlights, setUserHighlights] = useState<Record<string, string>>({});
   const rightClickStartRef = useRef<Square | null>(null);
 
@@ -380,18 +408,69 @@ export const Chessboard: React.FC<ChessboardProps> = ({
     return [...arrowGuide, ...userArrows];
   }, [arrowGuide, userArrows]);
 
+  // Evaluation Bar calculation (Image 2 style)
+  const evalData = useMemo(() => {
+    if (!showEvalBar) return null;
+    let cp = 0;
+    let label = '0.0';
+    if (typeof evalScore === 'number') {
+      cp = evalScore;
+      label = (cp / 100).toFixed(1);
+      if (cp > 0) label = `+${label}`;
+    } else if (typeof evalScore === 'string') {
+      label = evalScore;
+      if (evalScore.startsWith('#M')) {
+        const mateVal = parseInt(evalScore.replace('#M', ''), 10);
+        cp = mateVal > 0 ? 10000 : -10000;
+      } else {
+        cp = (parseFloat(evalScore) || 0) * 100;
+      }
+    }
+    const winPercent = 50 + 50 * (2 / (1 + Math.exp(-0.0035 * cp)) - 1);
+    const whiteHeight = Math.max(4, Math.min(96, winPercent));
+    return {
+      whiteHeight: boardOrientation === 'white' ? whiteHeight : 100 - whiteHeight,
+      label,
+    };
+  }, [showEvalBar, evalScore, boardOrientation]);
+
   return (
     <div className={`flex flex-col items-center select-none ${className}`}>
-      {/* Board Outer Container */}
-      <div
-        className="relative w-full max-w-full aspect-square p-2 sm:p-2.5 rounded-2xl shadow-2xl transition-all duration-300"
-        style={{
-          backgroundColor: activeTheme.borderColor,
-          boxShadow: '0 20px 40px -15px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08) inset',
-        }}
-        ref={boardRef}
-        onContextMenu={(e) => e.preventDefault()}
-      >
+      {/* Board & Optional Evaluation Bar Wrapper */}
+      <div className="flex items-center gap-2.5 w-full justify-center">
+        {/* Vertical Evaluation Bar (Chess.com Style - Image 2) */}
+        {evalData && (
+          <div
+            className="w-5 sm:w-6 h-[calc(100%-8px)] rounded-md bg-[#262421] border border-slate-700/60 flex flex-col justify-end overflow-hidden relative shadow-lg shrink-0"
+            style={{ height: boardRef.current ? `${boardRef.current.clientHeight - 8}px` : '100%', minHeight: '300px' }}
+            title={`Evaluation: ${evalData.label}`}
+          >
+            {/* White side */}
+            <div
+              className="w-full bg-[#FFFFFF] transition-all duration-300 ease-out flex items-end justify-center pb-1 text-[10px] font-bold text-slate-900 font-mono select-none"
+              style={{ height: `${evalData.whiteHeight}%` }}
+            >
+              {evalData.whiteHeight > 20 && evalData.label}
+            </div>
+            {/* Black side text if whiteHeight is low */}
+            {evalData.whiteHeight <= 20 && (
+              <div className="absolute top-1 inset-x-0 text-center text-[10px] font-bold text-white font-mono select-none">
+                {evalData.label}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Board Outer Container */}
+        <div
+          className="relative w-full max-w-full aspect-square p-2 sm:p-2.5 rounded-2xl shadow-2xl transition-all duration-300"
+          style={{
+            backgroundColor: activeTheme.borderColor,
+            boxShadow: '0 20px 40px -15px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08) inset',
+          }}
+          ref={boardRef}
+          onContextMenu={(e) => e.preventDefault()}
+        >
         {/* Inner Grid */}
         <div className="w-full h-full grid grid-cols-8 grid-rows-8 rounded-xl overflow-hidden relative shadow-inner">
           {ranks.map((rank, rankIdx) =>
@@ -407,6 +486,7 @@ export const Chessboard: React.FC<ChessboardProps> = ({
               const isCustomHighlight = highlightSquares.includes(square);
               const userHighlightColor = userHighlights[square];
               const isCheckSquare = kingInCheckSquare === square;
+              const boxHighlight = boxHighlights.find((b) => b.square === square);
 
               // Square background styling
               let squareBg = isLight ? activeTheme.lightSquare : activeTheme.darkSquare;
@@ -447,6 +527,21 @@ export const Chessboard: React.FC<ChessboardProps> = ({
                   {/* User Right-Click Highlight */}
                   {userHighlightColor && (
                     <div className="absolute inset-0 bg-amber-400/45 ring-2 ring-amber-400 ring-inset pointer-events-none" />
+                  )}
+
+                  {/* Box Highlight Frame (Image 1 style: thick border frame around piece) */}
+                  {boxHighlight && (
+                    <div
+                      className={`absolute inset-0 pointer-events-none z-10 border-[3.5px] sm:border-[4.5px] ${
+                        boxHighlight.color === 'green'
+                          ? 'border-emerald-500 bg-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.35)]'
+                          : boxHighlight.color === 'red'
+                          ? 'border-red-500 bg-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.35)]'
+                          : boxHighlight.color === 'blue'
+                          ? 'border-blue-500 bg-blue-500/20 shadow-[0_0_8px_rgba(59,130,246,0.35)]'
+                          : 'border-amber-400 bg-amber-400/20 shadow-[0_0_8px_rgba(251,191,36,0.35)]'
+                      }`}
+                    />
                   )}
 
                   {/* King Check Danger Pulse (Chess.com radial gradient glow) */}
@@ -580,6 +675,7 @@ export const Chessboard: React.FC<ChessboardProps> = ({
                       stroke={arrowFill}
                       strokeWidth="2.8"
                       strokeOpacity="0.85"
+                      strokeDasharray={arrow.dashed ? '4,3' : undefined}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
@@ -626,6 +722,7 @@ export const Chessboard: React.FC<ChessboardProps> = ({
                     stroke={arrowFill}
                     strokeWidth="2.8"
                     strokeOpacity="0.85"
+                    strokeDasharray={arrow.dashed ? '4,3' : undefined}
                     strokeLinecap="round"
                   />
                   <polygon
@@ -681,6 +778,7 @@ export const Chessboard: React.FC<ChessboardProps> = ({
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Floating Auxiliary Toolbar (Optional or when requested) */}

@@ -5,6 +5,7 @@ import { ChessEvaluationService } from '../services/chessEvaluationService';
 import { GamificationService } from '../services/gamificationService';
 import { AdaptiveService } from '../services/adaptiveService';
 import { PuzzleVerificationService } from '../services/puzzleVerificationService';
+import { AiCoachService } from '../services/aiCoachService';
 import { authenticate, optionalAuthenticate, AuthenticatedRequest } from '../middleware/authMiddleware';
 import { requireRole } from '../middleware/roleMiddleware';
 import { validateBody } from '../middleware/validateMiddleware';
@@ -890,3 +891,51 @@ apiRouter.post(
     }
   }
 );
+
+// ==========================================
+// 8. AI CHESS COACH (CHESS SIGMA & GAME REVIEW)
+// ==========================================
+
+/**
+ * Analyze position or move with Grandmaster Sigma AI
+ */
+apiRouter.post('/ai-coach/analyze', async (req, res) => {
+  try {
+    const { fen, playedMove, previousFen, history, playerColor } = req.body;
+    if (!fen) {
+      return res.status(400).json({ error: 'FEN string is required' });
+    }
+    const report = await AiCoachService.analyzePosition({
+      fen,
+      playedMove,
+      previousFen,
+      history,
+      playerColor,
+    });
+    return res.json(report);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Ask Coach Sigma any question about the position
+ */
+apiRouter.post('/ai-coach/ask', async (req, res) => {
+  try {
+    const { fen, question, history, userRating } = req.body;
+    if (!fen || !question) {
+      return res.status(400).json({ error: 'FEN and question are required' });
+    }
+    const answer = await AiCoachService.askCoach({
+      fen,
+      question,
+      history,
+      userRating,
+    });
+    return res.json(answer);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+

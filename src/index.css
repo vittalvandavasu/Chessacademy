@@ -3,12 +3,21 @@
 @layer base {
   :root {
     --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    --font-display: 'Fraunces', serif;
+    --font-display: 'Fraunces', Georgia, serif;
     --font-mono: 'JetBrains Mono', monospace;
+    --color-paper: #F5F1E8;
+    --color-paper-secondary: #E8E3D8;
+    --color-ink: #171717;
+    --color-green: #315C45;
+    --color-gold: #C7A45D;
+    --color-border: #D5D0C5;
+    --color-crimson: #B94A48;
   }
 
   body {
     font-family: var(--font-sans);
+    background-color: var(--color-paper);
+    color: var(--color-ink);
   }
 }
 
@@ -21,19 +30,19 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Custom scrollbars */
+/* Subtle editorial scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #090d16;
+  background: #F5F1E8;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 9999px;
+  background: #D5D0C5;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #C7A45D;
 }
 

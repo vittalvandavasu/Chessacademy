@@ -3,22 +3,14 @@ import { UserStats, ConceptMastery, DailyPracticeSession } from '../../types/che
 import { UserProfile } from '../../services/storageService';
 import { CURRICULUM_DATA } from '../../data/curriculumData';
 import {
-  Flame,
-  Zap,
-  Target,
   ArrowRight,
   TrendingUp,
-  AlertTriangle,
-  Play,
-  Award,
-  CheckCircle,
+  AlertCircle,
   BookOpen,
-  Compass,
+  CheckCircle2,
+  Clock,
+  Award,
   Sparkles,
-  Shield,
-  Layers,
-  ChevronRight,
-  Swords,
 } from 'lucide-react';
 
 interface HomeDashboardProps {
@@ -44,328 +36,246 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onTrainWeakness,
   onNavigateTab,
 }) => {
-  // Current in-progress lesson
-  const currentPath = CURRICULUM_DATA[1]; // Path 2: First Tactics
-  const currentLesson = currentPath.modules[0].lessons[0]; // The Pin
+  // Current in-progress lesson & recommended next lesson
+  const currentPath = CURRICULUM_DATA[1] || CURRICULUM_DATA[0];
+  const currentLesson = currentPath?.modules[0]?.lessons[0] || CURRICULUM_DATA[0].modules[0].lessons[0];
+  const nextRecommendedLesson =
+    currentPath?.modules[0]?.lessons[1] || currentPath?.modules[1]?.lessons[0] || currentLesson;
+
+  // Calculate high-level skill masteries across core domains
+  const getDomainMastery = (categoryPrefix: string, fallback: number) => {
+    const matching = masteryList.filter(
+      (m) =>
+        m.category.toLowerCase().includes(categoryPrefix.toLowerCase()) ||
+        m.concept.toLowerCase().includes(categoryPrefix.toLowerCase())
+    );
+    if (matching.length === 0) return fallback;
+    const avg = matching.reduce((sum, item) => sum + item.masteryPercentage, 0) / matching.length;
+    return Math.round(avg);
+  };
+
+  const domainMasteries = [
+    { domain: 'Foundations & Board Rules', percentage: getDomainMastery('movement', 92), level: 'Mastered' },
+    { domain: 'Chess Language & Algebraic Notation', percentage: 68, level: 'Developing' },
+    { domain: 'Tactics & Calculation (Pins, Forks, Skewers)', percentage: getDomainMastery('tactics', 74), level: 'Proficient' },
+    { domain: 'Strategic Center Control & Development', percentage: getDomainMastery('strategy', 60), level: 'Developing' },
+    { domain: 'Essential Endgame Technique', percentage: getDomainMastery('endgame', 52), level: 'Developing' },
+  ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-      {/* Editorial Hero Command Center */}
-      <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-2xl">
-        <div className="absolute inset-0 z-0 opacity-20">
-          <img
-            src="/src/assets/images/chess_academy_hero_1790399274247.jpg"
-            alt="Chess Academy"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/40" />
-        </div>
-
-        <div className="relative z-10 p-6 sm:p-8 md:p-10 max-w-3xl">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-2">
-            <span>Adaptive Chess Academy</span>
-            <span aria-hidden="true">·</span>
-            <span>Grandmaster Cadet Curriculum</span>
-            <span aria-hidden="true">·</span>
-            <span className="font-mono">Level {stats.level}</span>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-12">
+      {/* Editorial Title & Academic Discipline Bar */}
+      <div className="space-y-4 border-b border-[#D5D0C5] pb-8">
+        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
+          <div>
+            <div className="text-[11px] uppercase font-semibold tracking-widest text-[#315C45]">
+              Personal Chess Academy
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold font-display text-[#171717] mt-1 tracking-tight">
+              YOUR CHESS JOURNEY
+            </h1>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-100 font-display mb-3 text-balance leading-tight">
-            Welcome back, {user.name.split(' ')[0]}.
-          </h1>
-
-          <p className="text-slate-300 text-xs sm:text-sm sm:leading-relaxed mb-6 max-w-2xl">
-            Your adaptive training engine has calibrated today’s session. Focus on eliminating tactical blind spots, mastering classical pawn structures, and refining opening move orders.
-          </p>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={onStartDailyPractice}
-              className="py-2.5 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-md flex items-center gap-2"
-            >
-              <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
-              <span>Start Daily Workout (+{dailyPractice.totalXp} XP)</span>
-            </button>
-
-            <button
-              onClick={() => onNavigateTab('openings')}
-              className="py-2.5 px-5 bg-slate-800/90 hover:bg-slate-750 text-slate-200 font-semibold rounded-xl text-xs sm:text-sm border border-slate-700 transition-colors flex items-center gap-2 shadow-sm"
-            >
-              <Compass className="w-4 h-4 text-emerald-400" />
-              <span>Explore 20 Openings</span>
-            </button>
-
-            <button
-              onClick={() => onNavigateTab('puzzles')}
-              className="py-2.5 px-4 bg-slate-900/80 hover:bg-slate-800 text-slate-300 text-xs sm:text-sm font-medium rounded-xl border border-slate-800 transition-colors flex items-center gap-1.5"
-            >
-              <Target className="w-4 h-4 text-indigo-400" />
-              <span>Tactics Arena ({stats.learningRating})</span>
-            </button>
+          <div className="flex items-center gap-6 text-xs text-[#171717]/70 font-mono-nums">
+            <div>
+              <span className="block text-[10px] uppercase font-sans text-[#171717]/50 tracking-wider">
+                Current Level
+              </span>
+              <span className="font-semibold text-[#171717]">Level {stats.level} · Scholar</span>
+            </div>
+            <div className="border-l border-[#D5D0C5] pl-6">
+              <span className="block text-[10px] uppercase font-sans text-[#171717]/50 tracking-wider">
+                Study Discipline
+              </span>
+              <span className="font-semibold text-[#315C45]">{stats.currentStreakDays} Days Streak</span>
+            </div>
+            <div className="border-l border-[#D5D0C5] pl-6">
+              <span className="block text-[10px] uppercase font-sans text-[#171717]/50 tracking-wider">
+                Academy Rating
+              </span>
+              <span className="font-semibold text-[#171717]">{stats.learningRating} CC</span>
+            </div>
           </div>
         </div>
+        <p className="text-sm text-[#171717]/75 max-w-2xl leading-relaxed">
+          Welcome back, {user.name.split(' ')[0]}. Here is your clear pedagogical path: deliberate practice, notation fluency, and strategic pattern recognition.
+        </p>
       </div>
 
-      {/* The 4 Training Pillars */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <span className="text-xs uppercase font-semibold tracking-wider text-emerald-400 block mb-0.5">
-              Core Training Modules
-            </span>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-100 font-display">
-              Accelerated Learning Pathways
-            </h2>
+      {/* Primary Section: "WHAT SHOULD I LEARN NEXT?" Hero Card */}
+      <div className="bg-[#E8E3D8] border border-[#D5D0C5] rounded p-8 space-y-6">
+        <div className="flex items-center justify-between border-b border-[#D5D0C5] pb-4">
+          <div className="text-xs font-semibold uppercase tracking-widest text-[#315C45]">
+            Immediate Recommendation
           </div>
-          <span className="text-xs text-slate-400 font-mono-nums">
-            4 Specialized Arenas
+          <span className="text-[11px] font-mono text-[#171717]/60">
+            Curriculum Path 2 · Lesson 2
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Pillar 1: Openings Academy */}
-          <div
-            onClick={() => onNavigateTab('openings')}
-            className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/50 transition-all cursor-pointer group flex flex-col justify-between shadow-sm"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:scale-105 transition-transform">
-                  <Compass className="w-5 h-5" />
-                </div>
-                <span className="text-[11px] font-mono font-bold text-emerald-400">
-                  20 Repertoires
-                </span>
-              </div>
-              <h3 className="text-base font-bold text-slate-100 font-display mb-1 group-hover:text-emerald-300 transition-colors">
-                Openings Academy
-              </h3>
-              <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                Italian, Sicilian, King's Indian, Benoni, and Catalan with interactive board drills and plans.
-              </p>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          <div className="md:col-span-8 space-y-3">
+            <div className="text-[11px] uppercase font-semibold text-[#171717]/60 tracking-wider">
+              Recommended Next Lesson
             </div>
-            <div className="flex items-center justify-between pt-3 border-t border-slate-850 text-xs text-slate-400 group-hover:text-emerald-400 transition-colors">
-              <span>Drill Repertoires</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            <h2 className="text-2xl font-bold font-display text-[#171717]">
+              {nextRecommendedLesson.title}
+            </h2>
+            <p className="text-xs sm:text-sm text-[#171717]/80 leading-relaxed max-w-xl">
+              {nextRecommendedLesson.description ||
+                'Master how to freeze enemy pieces against high-value targets and convert positional pressure into decisive material gains.'}
+            </p>
+            <div className="flex items-center gap-4 text-xs text-[#171717]/65 pt-1">
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                <span>{nextRecommendedLesson.estimatedMinutes} minutes</span>
+              </span>
+              <span>·</span>
+              <span>Interactive board exercises + Cadet Coach guidance</span>
             </div>
           </div>
 
-          {/* Pillar 2: Tactics Arena */}
-          <div
-            onClick={() => onNavigateTab('puzzles')}
-            className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-indigo-500/50 transition-all cursor-pointer group flex flex-col justify-between shadow-sm"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 group-hover:scale-105 transition-transform">
-                  <Target className="w-5 h-5" />
-                </div>
-                <span className="text-[11px] font-mono font-bold text-indigo-400">
-                  Rating: {stats.learningRating}
-                </span>
-              </div>
-              <h3 className="text-base font-bold text-slate-100 font-display mb-1 group-hover:text-indigo-300 transition-colors">
-                Tactics Lab
-              </h3>
-              <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                Grandmaster-verified tactical combinations: forks, pins, skewers, and queen sacrifices.
-              </p>
-            </div>
-            <div className="flex items-center justify-between pt-3 border-t border-slate-850 text-xs text-slate-400 group-hover:text-indigo-400 transition-colors">
-              <span>Solve Tactics</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </div>
-
-          {/* Pillar 3: Structured Curriculum */}
-          <div
-            onClick={() => onNavigateTab('learn')}
-            className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-amber-500/50 transition-all cursor-pointer group flex flex-col justify-between shadow-sm"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 group-hover:scale-105 transition-transform">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <span className="text-[11px] font-mono font-bold text-amber-400">
-                  {stats.lessonsCompleted} Completed
-                </span>
-              </div>
-              <h3 className="text-base font-bold text-slate-100 font-display mb-1 group-hover:text-amber-300 transition-colors">
-                Curriculum Paths
-              </h3>
-              <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                Step-by-step masterclasses spanning piece geometry, tactical motifs, and endgame technique.
-              </p>
-            </div>
-            <div className="flex items-center justify-between pt-3 border-t border-slate-850 text-xs text-slate-400 group-hover:text-amber-400 transition-colors">
-              <span>Continue Path</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </div>
-
-          {/* Pillar 4: Daily Practice Session */}
-          <div
-            onClick={onStartDailyPractice}
-            className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/50 transition-all cursor-pointer group flex flex-col justify-between shadow-sm"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:scale-105 transition-transform">
-                  <Zap className="w-5 h-5 text-amber-400" />
-                </div>
-                <span className="text-[11px] font-mono font-bold text-emerald-400">
-                  +{dailyPractice.totalXp} XP
-                </span>
-              </div>
-              <h3 className="text-base font-bold text-slate-100 font-display mb-1 group-hover:text-emerald-300 transition-colors">
-                Daily Workout
-              </h3>
-              <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                5 targeted drills dynamically selected to strengthen your current areas of greatest opportunity.
-              </p>
-            </div>
-            <div className="flex items-center justify-between pt-3 border-t border-slate-850 text-xs text-slate-400 group-hover:text-emerald-400 transition-colors">
-              <span>{dailyPractice.isCompleted ? 'Review Workout' : 'Start Drill'}</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </div>
+          {/* Singular Prominent Primary CTA (No competing CTAs) */}
+          <div className="md:col-span-4 flex flex-col items-start md:items-end justify-center">
+            <button
+              onClick={() => onContinueLearning(nextRecommendedLesson.id)}
+              className="w-full sm:w-auto py-3.5 px-7 bg-[#315C45] hover:bg-[#284a37] text-white font-semibold text-xs sm:text-sm tracking-wider uppercase rounded transition-all shadow-xs flex items-center justify-center gap-3 group"
+            >
+              <span>CONTINUE LEARNING</span>
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </button>
+            <span className="text-[10px] text-[#171717]/50 mt-2 text-right">
+              Curriculum progression will advance automatically
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Identified Weakness Remediation Banner */}
-      {biggestOpportunity && (
-        <div className="bg-gradient-to-r from-red-950/40 via-slate-900 to-slate-900 border border-red-500/30 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-start gap-3.5">
-            <div className="p-2.5 rounded-xl bg-red-500/10 text-red-400 shrink-0 border border-red-500/20">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-red-400 mb-1">
-                <span>Personalized Diagnostic Finding</span>
-                <span aria-hidden="true">·</span>
-                <span className="font-mono-nums">{biggestOpportunity.masteryPercentage}% Accuracy</span>
-              </div>
-              <h4 className="text-base font-bold text-slate-100 font-display">
-                Weakness Detected: {biggestOpportunity.name}
-              </h4>
-              <p className="text-slate-300 text-xs sm:text-sm mt-0.5">
-                Your tactical calculation accuracy dipped on this motif. We have generated focused exercises to reinforce pattern recognition.
-              </p>
-            </div>
+      {/* Two-Column Academic Section: Skill Mastery & Weak Areas */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column (7 cols): Skill Mastery */}
+        <div className="lg:col-span-7 bg-[#F5F1E8] border border-[#D5D0C5] rounded p-6 space-y-5">
+          <div className="flex items-center justify-between border-b border-[#D5D0C5] pb-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-[#171717]">
+              Skill Mastery Breakdown
+            </h3>
+            <span className="text-[11px] font-mono text-[#315C45] font-semibold">
+              Curriculum Standards
+            </span>
           </div>
 
-          <button
-            onClick={() => onTrainWeakness(biggestOpportunity.concept)}
-            className="shrink-0 py-2.5 px-4 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
-          >
-            <span>Remediate Now</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      {/* Tactical Mastery Radar & Diagnostic Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Rating & Growth Metric Card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                Cadet Learning Rating
-              </h3>
-              <span className="text-[11px] font-mono text-slate-500">Authoritative</span>
-            </div>
-
-            <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-4xl font-extrabold text-slate-100 font-mono-nums font-display">
-                {stats.learningRating}
-              </span>
-              <span className="text-xs text-emerald-400 font-semibold font-mono-nums">
-                +38 pts this week
-              </span>
-            </div>
-
-            <p className="text-xs text-slate-400 leading-relaxed mb-6">
-              Calibrated strictly on solving accuracy, blunder avoidance, and response times in verified positions.
-            </p>
-          </div>
-
-          <div className="pt-4 border-t border-slate-850 grid grid-cols-2 gap-4 text-xs">
-            <div>
-              <span className="text-slate-500 block mb-0.5">Puzzles Solved</span>
-              <span className="font-bold text-slate-200 font-mono-nums text-sm">
-                {stats.puzzlesSolved}
-              </span>
-            </div>
-            <div>
-              <span className="text-slate-500 block mb-0.5">Accuracy Rate</span>
-              <span className="font-bold text-emerald-400 font-mono-nums text-sm">
-                {stats.accuracyRate}%
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Tactical Motif Mastery Breakdown */}
-        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                Tactical Mastery Diagnostics
-              </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Real-time proficiency calculated across primary tactical motifs.
-              </p>
-            </div>
-            <button
-              onClick={() => onNavigateTab('progress')}
-              className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
-            >
-              <span>Full Analytics</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="space-y-3.5">
-            {masteryList.slice(0, 5).map((item) => (
-              <div key={item.concept} className="space-y-1">
+          <div className="space-y-4">
+            {domainMasteries.map((m) => (
+              <div key={m.domain} className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-slate-200">{item.name}</span>
-                  <div className="flex items-center gap-3 text-slate-400 font-mono-nums">
-                    <span>{item.successfulAttempts}/{item.totalAttempts} solved</span>
-                    <span
-                      className={`font-semibold ${
-                        item.masteryPercentage >= 75
-                          ? 'text-emerald-400'
-                          : item.masteryPercentage >= 50
-                          ? 'text-amber-400'
-                          : 'text-rose-400'
-                      }`}
-                    >
-                      {item.masteryPercentage}%
+                  <span className="font-medium text-[#171717]">{m.domain}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase font-mono text-[#171717]/50">
+                      {m.level}
                     </span>
+                    <span className="font-mono font-semibold text-[#171717]">{m.percentage}%</span>
                   </div>
                 </div>
-
-                {/* Progress track */}
-                <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                <div className="w-full h-1.5 bg-[#E8E3D8] rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      item.masteryPercentage >= 75
-                        ? 'bg-emerald-500'
-                        : item.masteryPercentage >= 50
-                        ? 'bg-amber-500'
-                        : 'bg-rose-500'
+                    className={`h-full transition-all duration-500 rounded-full ${
+                      m.percentage < 55
+                        ? 'bg-[#B94A48]'
+                        : m.percentage < 75
+                        ? 'bg-[#C7A45D]'
+                        : 'bg-[#315C45]'
                     }`}
-                    style={{ width: `${item.masteryPercentage}%` }}
+                    style={{ width: `${m.percentage}%` }}
                   />
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className="pt-2 text-xs text-[#171717]/70 italic border-t border-[#D5D0C5]">
+            Evaluated continuously against tournament-level standards and accuracy metrics.
+          </div>
+        </div>
+
+        {/* Right Column (5 cols): Weak Areas & Targeted Diagnostics */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="bg-[#E8E3D8] border border-[#D5D0C5] rounded p-6 space-y-4">
+            <div className="flex items-center gap-2 border-b border-[#D5D0C5] pb-3">
+              <AlertCircle className="w-4 h-4 text-[#B94A48]" />
+              <h3 className="text-sm font-bold uppercase tracking-wider text-[#171717]">
+                Identified Weak Areas
+              </h3>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              <div className="p-3 bg-[#F5F1E8] border border-[#D5D0C5] rounded space-y-1.5">
+                <div className="flex justify-between items-baseline">
+                  <span className="font-semibold text-[#171717]">Disambiguation in Notation</span>
+                  <span className="font-mono text-[11px] font-bold text-[#B94A48]">21% Mastery</span>
+                </div>
+                <p className="text-[11px] text-[#171717]/70 leading-relaxed">
+                  Hesitation when two identical pieces share a destination square (e.g., Nbd2 vs Nfd2).
+                </p>
+                <button
+                  onClick={() => onNavigateTab('practice')}
+                  className="text-[11px] text-[#315C45] font-semibold hover:underline inline-flex items-center gap-1 pt-1"
+                >
+                  <span>Practice 5 positions</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+
+              <div className="p-3 bg-[#F5F1E8] border border-[#D5D0C5] rounded space-y-1.5">
+                <div className="flex justify-between items-baseline">
+                  <span className="font-semibold text-[#171717]">Rook Endgames: Passive King</span>
+                  <span className="font-mono text-[11px] font-bold text-[#C7A45D]">44% Mastery</span>
+                </div>
+                <p className="text-[11px] text-[#171717]/70 leading-relaxed">
+                  Tendency to keep King back rather than activating it to support passed pawns in the endgame.
+                </p>
+                <button
+                  onClick={() => onNavigateTab('learn')}
+                  className="text-[11px] text-[#315C45] font-semibold hover:underline inline-flex items-center gap-1 pt-1"
+                >
+                  <span>Study Endgame Chapter</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Performance Log */}
+          <div className="bg-[#F5F1E8] border border-[#D5D0C5] rounded p-6 space-y-3">
+            <div className="flex items-center justify-between border-b border-[#D5D0C5] pb-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#171717]">
+                Recent Academic Record
+              </h3>
+              <span className="text-[10px] font-mono text-[#171717]/50">Last 3 Sessions</span>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between py-1 border-b border-[#D5D0C5]/50">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#315C45]" />
+                  <span className="text-[#171717]">The Pin: Absolute vs Relative</span>
+                </div>
+                <span className="font-mono text-[11px] text-[#315C45] font-medium">100% Accuracy</span>
+              </div>
+              <div className="flex items-center justify-between py-1 border-b border-[#D5D0C5]/50">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#315C45]" />
+                  <span className="text-[#171717]">Rook Trajectory & Open Files</span>
+                </div>
+                <span className="font-mono text-[11px] text-[#315C45] font-medium">92% Accuracy</span>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#315C45]" />
+                  <span className="text-[#171717]">Algebraic Coordinates: Grid Mastery</span>
+                </div>
+                <span className="font-mono text-[11px] text-[#315C45] font-medium">88% Accuracy</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
